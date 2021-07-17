@@ -117,6 +117,18 @@ class Balo(Personnage):
         ecran.blit(self._image_balo, (position_ecran[0] - 16, position_ecran[1] - 64) )
         pass
 
+    def court_a_droite(self):
+        self._vitesse[0] = -1
+
+    def court_a_gauche(self):
+        self._vitesse[0] = 1
+
+    def stoppe(self):
+        self._vitesse[0] = 0
+
+    def saute(self):
+        self._vitesse[1] = -1
+
     def gestion(self):
         self._position_pieds[0] += self._vitesse[0]
         self._position_pieds[1] += self._vitesse[1]
@@ -172,10 +184,13 @@ while 1:
     if touches_pressees[K_z]:
         orig -= 1
     if touches_pressees[K_LEFT]:
-        position_pieds_balo[0] -= 1
-    if touches_pressees[K_RIGHT]:
-        position_pieds_balo[0] += 1
+        niveau._balo.court_a_droite()
+    elif touches_pressees[K_RIGHT]:
+        niveau._balo.court_a_gauche()
+    else:
+        niveau._balo.stoppe()
     if touches_pressees[K_SPACE]:
+        niveau._balo.saute()
         gestion_balo(EtatBalo.SAUT_COURT)
     gestion_balo()
     niveau.gestion()
