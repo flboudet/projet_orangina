@@ -86,13 +86,22 @@ class Niveau:
     def conversionPositionPixelEcran(self, position_pixel_niveau):
         return [position_pixel_niveau[0] + self._orig[0], position_pixel_niveau[1] + self._orig[1]]
 
-    def collision(self, position_pixel_niveau):
+    def conversionPositionPixelNiveauVersTile(self, position_pixel_niveau):
+        return [int(position_pixel_niveau[0] / 32), int(position_pixel_niveau[1] / 32)]
+
+    def collision(self, position_pixel_niveau, vitesse_pixel=[0, 0]):
+        # Calcul de la prochaine position du pixel
+        prochaine_position_pixel_niveau = [position_pixel_niveau[0]+vitesse_pixel[0],
+                                           position_pixel_niveau[1]+vitesse_pixel[1]]
         # Calcul du tile dans laquelle se trouve le pixel
-        position_tile = [int(position_pixel_niveau[0] / 32), int(position_pixel_niveau[1] / 32)]
+        position_tile = self.conversionPositionPixelNiveauVersTile(position_pixel_niveau)
+        prochaine_position_tile = self.conversionPositionPixelNiveauVersTile(prochaine_position_pixel_niveau)
         tile =  self._niveaudata[position_tile[0]][position_tile[1]]
         if tile:
             sprite = tile['sprite']
             if sprite:
+                # On met la position a jour hors collision
+                position_pixel_niveau[1] = self.conversionPositionTile(position_tile)[1] - 1
                 return True
         return False
 
@@ -100,6 +109,11 @@ class Personnage:
 
     def __init__(self, position_tile, niveau):
         self._position_tile = position_tile
+
+class SautBalo(Enum):
+    RIEN = 0
+    SAUT_COURT = 1
+    SAUT_LONG = 2
 
 class Balo(Personnage):
 
@@ -110,6 +124,7 @@ class Balo(Personnage):
         self._position_pieds = [position_coingauche[0] + 16, position_coingauche[1] + 32]
         self._image_balo = pygame.image.load("balo.png")
         self._vitesse = [1, 0]
+        self._saut = SautBalo.RIEN
 
     def dessine(self, ecran):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
@@ -118,58 +133,44 @@ class Balo(Personnage):
         pass
 
     def court_a_droite(self):
-        self._vitesse[0] = -1
+        self._vitesse[0] = -4
 
     def court_a_gauche(self):
-        self._vitesse[0] = 1
+        self._vitesse[0] = 4
 
     def stoppe(self):
         self._vitesse[0] = 0
 
     def saute(self):
-        self._vitesse[1] = -1
+        if self._saut == SautBalo.RIEN:
+            self._saut = SautBalo.SAUT_COURT
+            self._cycle_saut = 0
+            self._vitesse[1] = -5
 
     def gestion(self):
+        # Gestion de la gravité et des sauts
+        if self._saut == SautBalo.RIEN or self._cycle_saut > 10:
+            self._vitesse[1] += 1
+            self._saut = SautBalo.RIEN
+        else:
+            self._cycle_saut += 1
+
+        # Detection collision
+        if niveau.collision(self._position_pieds, self._vitesse):
+            self._vitesse[1] = 0
+            self._saut = SautBalo.RIEN
+
+        # Mise à jour de la position
         self._position_pieds[0] += self._vitesse[0]
         self._position_pieds[1] += self._vitesse[1]
-        self._vitesse[1] += 1
-        # Detection collision
-        if niveau.collision(self._position_pieds):
-            self._vitesse[1] = 0
 
-class EtatBalo(Enum):
-    RIEN = 0
-    SAUT_COURT = 1
-    SAUT_LONG = 2
+
 
 niveau = Niveau()
 
-etat_balo = EtatBalo.RIEN
 orig = 0
 position_pieds_balo = [niveau._position_tile_balo[0]*32 + 16, niveau._position_tile_balo[1]*32 + 32]
 acceleration_saut_balo = 0
-
-def gestion_balo(nouvel_etat = None):
-    global etat_balo
-    global position_pieds_balo
-    global acceleration_saut_balo
-
-    if nouvel_etat:
-        if etat_balo != nouvel_etat:
-            etat_balo = nouvel_etat
-            if nouvel_etat == EtatBalo.SAUT_COURT:
-                pygame.mixer.Sound.play(son_saut)
-                acceleration_saut_balo = -5
-
-    # Gestion de la gravité
-    acceleration_saut_balo += 1
-
-    # Gestion des collisions
-    position_pieds_balo[1] += acceleration_saut_balo
-
-
-    #if etat_balo == EtatBalo.SAUT_COURT:
-    #    if acceleration_saut_balo
 
 while 1:
 
@@ -191,11 +192,18 @@ while 1:
         niveau._balo.stoppe()
     if touches_pressees[K_SPACE]:
         niveau._balo.saute()
-        gestion_balo(EtatBalo.SAUT_COURT)
-    gestion_balo()
+
     niveau.gestion()
     #ecran.fill(black)
     ecran.blit(image_ciel, image_ciel_rect)
+
+    # Calcul de la position de la camera
+    tiers_ecran = taille_ecran[0]/3
+    deuxtiers_ecran = tiers_ecran*2
+    if (orig + niveau._balo._position_pieds[0]) < tiers_ecran:
+        orig = tiers_ecran - niveau._balo._position_pieds[0]
+    if (orig + niveau._balo._position_pieds[0]) > deuxtiers_ecran:
+        orig = deuxtiers_ecran - niveau._balo._position_pieds[0]
 
     # Dessin du niveau
     niveau.change_origine(orig)
