@@ -110,10 +110,15 @@ class Personnage:
     def __init__(self, position_tile, niveau):
         self._position_tile = position_tile
 
+class Direction(Enum):
+    GAUCHE = -1
+    DROITE = 1
+
 class SautBalo(Enum):
     RIEN = 0
     SAUT_COURT = 1
-    SAUT_LONG = 2
+    SAUT_MOYEN = 2
+    SAUT_LONG  = 3
 
 class Balo(Personnage):
 
@@ -122,21 +127,29 @@ class Balo(Personnage):
         self._niveau = niveau
         position_coingauche = niveau.conversionPositionTile(self._position_tile)
         self._position_pieds = [position_coingauche[0] + 16, position_coingauche[1] + 32]
-        self._image_balo = pygame.image.load("balo.png")
+        self._image_balo_d = pygame.image.load("balo.png")
+        self._image_balo_g = pygame.transform.flip(self._image_balo_d, True, False)
         self._vitesse = [1, 0]
         self._saut = SautBalo.RIEN
+        self._cycle_saut = 0
+        self._direction = Direction.DROITE
 
     def dessine(self, ecran):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
         #position_balo_ecran = (self._position_pieds[0] + orig - 16, position_pieds_balo[1] - 64)
-        ecran.blit(self._image_balo, (position_ecran[0] - 16, position_ecran[1] - 64) )
+        if self._direction == Direction.DROITE:
+            ecran.blit(self._image_balo_d, (position_ecran[0] - 16, position_ecran[1] - 64) )
+        else:
+            ecran.blit(self._image_balo_g, (position_ecran[0] - 16, position_ecran[1] - 64) )
         pass
 
     def court_a_droite(self):
-        self._vitesse[0] = -4
+        self._vitesse[0] = 2
+        self._direction = Direction.DROITE
 
     def court_a_gauche(self):
-        self._vitesse[0] = 4
+        self._vitesse[0] = -2
+        self._direction = Direction.GAUCHE
 
     def stoppe(self):
         self._vitesse[0] = 0
@@ -145,13 +158,22 @@ class Balo(Personnage):
         if self._saut == SautBalo.RIEN:
             self._saut = SautBalo.SAUT_COURT
             self._cycle_saut = 0
-            self._vitesse[1] = -5
+            self._vitesse[1] = -3
+        elif self._cycle_saut > 20:
+            self._saut = SautBalo.SAUT_LONG
+        elif self._cycle_saut > 9:
+            self._saut = SautBalo.SAUT_MOYEN
 
     def gestion(self):
+        # print(self._saut)
+        # print(self._cycle_saut)
         # Gestion de la gravité et des sauts
-        if self._saut == SautBalo.RIEN or self._cycle_saut > 10:
-            self._vitesse[1] += 1
-            self._saut = SautBalo.RIEN
+        if self._saut == SautBalo.RIEN \
+                 or (self._saut == SautBalo.SAUT_COURT and self._cycle_saut > 20) \
+                 or (self._saut == SautBalo.SAUT_MOYEN and self._cycle_saut > 40) \
+                 or (self._saut == SautBalo.SAUT_LONG  and self._cycle_saut > 60):
+            self._vitesse[1] += 0.3
+            # self._saut = SautBalo.RIEN
         else:
             self._cycle_saut += 1
 
@@ -171,8 +193,10 @@ niveau = Niveau()
 orig = 0
 position_pieds_balo = [niveau._position_tile_balo[0]*32 + 16, niveau._position_tile_balo[1]*32 + 32]
 acceleration_saut_balo = 0
+cycle = 0
 
 while 1:
+    cycle += 1
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT: sys.exit()
@@ -185,35 +209,32 @@ while 1:
     if touches_pressees[K_z]:
         orig -= 1
     if touches_pressees[K_LEFT]:
-        niveau._balo.court_a_droite()
-    elif touches_pressees[K_RIGHT]:
         niveau._balo.court_a_gauche()
+    elif touches_pressees[K_RIGHT]:
+        niveau._balo.court_a_droite()
     else:
         niveau._balo.stoppe()
     if touches_pressees[K_SPACE]:
         niveau._balo.saute()
 
     niveau.gestion()
-    #ecran.fill(black)
-    ecran.blit(image_ciel, image_ciel_rect)
 
-    # Calcul de la position de la camera
-    tiers_ecran = taille_ecran[0]/3
-    deuxtiers_ecran = tiers_ecran*2
-    if (orig + niveau._balo._position_pieds[0]) < tiers_ecran:
-        orig = tiers_ecran - niveau._balo._position_pieds[0]
-    if (orig + niveau._balo._position_pieds[0]) > deuxtiers_ecran:
-        orig = deuxtiers_ecran - niveau._balo._position_pieds[0]
+    # Dessin, 1 cycle sur 4
+    if cycle % 4 == 0:
+        #ecran.fill(black)
+        ecran.blit(image_ciel, image_ciel_rect)
 
-    # Dessin du niveau
-    niveau.change_origine(orig)
-    niveau.dessine(ecran)
+        # Calcul de la position de la camera
+        tiers_ecran = taille_ecran[0]/3
+        deuxtiers_ecran = tiers_ecran*2
+        if (orig + niveau._balo._position_pieds[0]) < tiers_ecran:
+            orig = tiers_ecran - niveau._balo._position_pieds[0]
+        if (orig + niveau._balo._position_pieds[0]) > deuxtiers_ecran:
+            orig = deuxtiers_ecran - niveau._balo._position_pieds[0]
 
-    # calcul des coordonnees de balo
-    #position_balo_ecran = (position_pieds_balo[0] + orig - 16, position_pieds_balo[1] - 64)
-    #ecran.blit(image_balo, position_balo_ecran)
-    #ecran.blit(image_brique, position_brique)
-    #position_brique[1] = position_brique[1] + 1
+        # Dessin du niveau
+        niveau.change_origine(orig)
+        niveau.dessine(ecran)
 
-    pygame.display.flip()
-    pygame.time.Clock().tick(60)
+        pygame.display.flip()
+        pygame.time.Clock().tick(60)
