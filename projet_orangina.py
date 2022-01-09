@@ -29,6 +29,7 @@ def dessine_niveau(niveaudata, origx=0, origy=0):
 
 class Niveau:
     def __init__(self):
+        self._personnages = list()
         self._niveaudata = [[dict() for i in range(100)] for j in range(500)]
         self._orig = [0, 0]
         # Chargement des images
@@ -52,7 +53,9 @@ class Niveau:
                 elif curchar == '#':
                     self._niveaudata[x][y]['sprite'] = self._image_brique
                 elif curchar == 'm':
-                    self._niveaudata[x][y]['sprite'] = self._image_mechant
+                    mechant = Mechant([x, y], self)
+                    self._personnages.append(mechant)
+                    #self._niveaudata[x][y]['sprite'] = self._image_mechant
                 elif curchar == 'p':
                     self._niveaudata[x][y]['sprite'] = self._image_papillon
                 elif curchar == '*':
@@ -76,8 +79,13 @@ class Niveau:
                         ecran.blit(sprite, (x*32 + self._orig[0], y*32 + self._orig[1]))
         # Dessiner Balo
         self._balo.dessine(ecran)
+        # Dessiner les méchants
+        for personnage in self._personnages:
+            personnage.dessine(ecran)
 
     def gestion(self):
+        for personnage in self._personnages:
+            personnage.gestion()
         self._balo.gestion()
 
     def conversionPositionTile(self, position_tile):
@@ -120,6 +128,22 @@ class SautBalo(Enum):
     SAUT_MOYEN = 2
     SAUT_LONG  = 3
 
+class Mechant(Personnage):
+    def __init__(self, position_tile, niveau):
+        super().__init__(position_tile, niveau)
+        self._niveau = niveau
+        position_coingauche = niveau.conversionPositionTile(self._position_tile)
+        self._position_pieds = [position_coingauche[0] + 16, position_coingauche[1] + 16]
+        self._image_mechant = niveau._image_mechant
+        
+    def dessine(self, ecran):
+        position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
+        ecran.blit(self._image_mechant, (position_ecran[0] - 16, position_ecran[1] - 16) )
+        
+    def gestion(self):
+        self._position_pieds[0] += 0.1
+        pass
+        
 class Balo(Personnage):
 
     def __init__(self, position_tile, niveau):
