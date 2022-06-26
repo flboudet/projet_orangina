@@ -3,6 +3,7 @@ import pygame
 from enum import Enum
 from pygame.locals import *
 import pygame.time
+from pygame import mixer
 
 print("Projet Orangina")
 
@@ -135,14 +136,19 @@ class Mechant(Personnage):
         position_coingauche = niveau.conversionPositionTile(self._position_tile)
         self._position_pieds = [position_coingauche[0] + 16, position_coingauche[1] + 16]
         self._image_mechant = niveau._image_mechant
+        self._vitesse = [0.4, 0.]
         
     def dessine(self, ecran):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
         ecran.blit(self._image_mechant, (position_ecran[0] - 16, position_ecran[1] - 16) )
         
     def gestion(self):
-        self._position_pieds[0] += 0.1
-        pass
+        # Detection collision
+        if niveau.collision(self._position_pieds, self._vitesse):
+            self._vitesse[0] = -self._vitesse[0]
+        # Mise à jour de la position
+        self._position_pieds[0] += self._vitesse[0]
+        self._position_pieds[1] += self._vitesse[1]
         
 class Balo(Personnage):
 
@@ -218,6 +224,9 @@ orig = 0
 position_pieds_balo = [niveau._position_tile_balo[0]*32 + 16, niveau._position_tile_balo[1]*32 + 32]
 acceleration_saut_balo = 0
 cycle = 0
+mixer.init()
+mixer.music.load('niveau1-1.xm')
+mixer.music.play()
 
 while 1:
     cycle += 1
