@@ -162,16 +162,33 @@ class Balo(Personnage):
         self._position_pieds = [position_coingauche[0] + 16, position_coingauche[1] + 32]
         self._image_balo_d = pygame.image.load("balo.png")
         self._image_balo_g = pygame.transform.flip(self._image_balo_d, True, False)
+        
+        self._image_balo_feu = [pygame.image.load("balo_crache_1.png"),
+                                pygame.image.load("balo_crache_2.png"),
+                                pygame.image.load("balo_crache_3.png")]
         self._vitesse = [1, 0]
         self._saut = SautBalo.RIEN
         self._cycle_saut = 0
         self._direction = Direction.DROITE
+        self._crache = 0
 
     def dessine(self, ecran):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
         #position_balo_ecran = (self._position_pieds[0] + orig - 16, position_pieds_balo[1] - 64)
         if self._direction == Direction.DROITE:
-            ecran.blit(self._image_balo_d, (position_ecran[0] - 16, position_ecran[1] - 64) )
+            if self._crache == 0:
+                ecran.blit(self._image_balo_d, (position_ecran[0] - 16, position_ecran[1] - 64) )
+            else:
+                if self._crache < 10:
+                    ecran.blit(self._image_balo_feu[0], (position_ecran[0] - 16, position_ecran[1] - 64) )
+                elif self._crache < 20:
+                    ecran.blit(self._image_balo_feu[1], (position_ecran[0] - 16, position_ecran[1] - 64) )
+                elif self._crache < 70:
+                    ecran.blit(self._image_balo_feu[2], (position_ecran[0] - 16, position_ecran[1] - 64) )
+                elif self._crache < 80:
+                    ecran.blit(self._image_balo_feu[1], (position_ecran[0] - 16, position_ecran[1] - 64) )
+                else:
+                    ecran.blit(self._image_balo_feu[0], (position_ecran[0] - 16, position_ecran[1] - 64) )
         else:
             ecran.blit(self._image_balo_g, (position_ecran[0] - 16, position_ecran[1] - 64) )
         pass
@@ -197,9 +214,18 @@ class Balo(Personnage):
         elif self._cycle_saut > 9:
             self._saut = SautBalo.SAUT_MOYEN
 
+    def crache(self):
+        self._crache = 1
+        pass
+    
     def gestion(self):
         # print(self._saut)
         # print(self._cycle_saut)
+        # Gestion du feu
+        if self._crache > 0:
+            self._crache += 1
+            if self._crache == 100:
+                self._crache = 0
         # Gestion de la gravité et des sauts
         if self._saut == SautBalo.RIEN \
                  or (self._saut == SautBalo.SAUT_COURT and self._cycle_saut > 20) \
@@ -252,6 +278,8 @@ while 1:
         niveau._balo.stoppe()
     if touches_pressees[K_SPACE]:
         niveau._balo.saute()
+    if touches_pressees[K_w]:
+        niveau._balo.crache()
 
     niveau.gestion()
 
