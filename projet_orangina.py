@@ -35,6 +35,7 @@ class Niveau:
         self._orig = [0, 0]
         # Chargement des images
         self._image_brique = pygame.image.load("bloc_32.png")
+        self._image_herbe = pygame.image.load("bloc_herbe_32.png")
         self._image_piece = pygame.image.load("piece.png")
         self._image_mechant = pygame.image.load("mechant.png")
         self._image_papillon = pygame.image.load("chenille_volante.png")
@@ -53,6 +54,8 @@ class Niveau:
                     self._position_tile_balo = (x, y)
                 elif curchar == '#':
                     self._niveaudata[x][y]['sprite'] = self._image_brique
+                elif curchar == 'b':
+                    self._niveaudata[x][y]['sprite'] = self._image_herbe
                 elif curchar == 'm':
                     mechant = Mechant([x, y], self)
                     self._personnages.append(mechant)
