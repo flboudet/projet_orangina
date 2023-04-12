@@ -1,5 +1,5 @@
-                                                                                                              #
-                                                                                                              #
+b                                                                                                             #
+b                                                                                                             #
 # d                                                                                                           #
 ####                                                                                 ###   m   ##             #
 #######bbbb                                                                        ###############            #
@@ -12,14 +12,14 @@
 ###########  ###########   **********######       m        ##       ###########################################
 ###########  #########b#   ##################################      ##b#########################################
 ###########  ###########   ####################################################################################
-###########  ###########   #########################b##########################################################
+########b##  ###########   #########################b##########################################################
 #b#b#b#b#b#  b#b#b#b#b#b    #b#b# #b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#b#
 bbbbbbbbbbb  bbbbbbbbbbbb  bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb                                                                 
-
-
-
-
-                           
+bbbbbbbbbbb   bbbbbbbbbbb  bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+bbbbbbbbbb   bbbbbbbbbbb   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+   bbbbbbb   bbbbbbbbbbb   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+             bbbbbbbbbbb   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+                           bbbbbbbbbbbbbbbb
                                 
                                 
                                 

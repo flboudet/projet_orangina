@@ -101,20 +101,42 @@ class Niveau:
     def conversionPositionPixelNiveauVersTile(self, position_pixel_niveau):
         return [int(position_pixel_niveau[0] / 32), int(position_pixel_niveau[1] / 32)]
 
-    def collision(self, position_pixel_niveau, vitesse_pixel=[0, 0]):
-        # Calcul de la prochaine position du pixel
-        prochaine_position_pixel_niveau = [position_pixel_niveau[0]+vitesse_pixel[0],
-                                           position_pixel_niveau[1]+vitesse_pixel[1]]
-        # Calcul du tile dans laquelle se trouve le pixel
+    def pixel_en_collision(self, position_pixel_niveau):
         position_tile = self.conversionPositionPixelNiveauVersTile(position_pixel_niveau)
-        prochaine_position_tile = self.conversionPositionPixelNiveauVersTile(prochaine_position_pixel_niveau)
         tile =  self._niveaudata[position_tile[0]][position_tile[1]]
         if tile:
             sprite = tile['sprite']
             if sprite:
-                # On met la position a jour hors collision
-                position_pixel_niveau[1] = self.conversionPositionTile(position_tile)[1] - 1
                 return True
+        return False
+    
+    def collision(self, position_pixel_niveau, vitesse_pixel=[0, 0]):
+        # On part du principe qu'on n'est pas encore en collision
+        # On regarde s'il y aura une collision en X
+        prochaine_position_pixel_niveau_x = [position_pixel_niveau[0]+vitesse_pixel[0],
+                                            position_pixel_niveau[1]]
+        # S'il y a collision, on annule la vitesse en X
+        if self.pixel_en_collision(prochaine_position_pixel_niveau_x):
+            vitesse_pixel[0] = 0
+            #position_tile = self.conversionPositionPixelNiveauVersTile(prochaine_position_pixel_niveau_x)
+            position_pixel_niveau[0] += 1
+            print("Collision en X")
+            return True
+        else:
+            position_pixel_niveau[0] += vitesse_pixel[0]
+            
+        # On regarde s'il y aura une collision en Y
+        prochaine_position_pixel_niveau_y = [position_pixel_niveau[0],
+                                            position_pixel_niveau[1]+vitesse_pixel[1]]
+        # S'il y a collision, on annule la vitesse en Y
+        if self.pixel_en_collision(prochaine_position_pixel_niveau_y):
+            vitesse_pixel[1] = 0
+            #position_pixel_niveau[1] += 1
+            print("Collision en Y")
+            return True
+        else:
+            position_pixel_niveau[1] += vitesse_pixel[1]
+        
         return False
 
 class Personnage:
@@ -160,6 +182,7 @@ class Balo(Personnage):
         self._niveau = niveau
         position_coingauche = niveau.conversionPositionTile(self._position_tile)
         self._position_pieds = [position_coingauche[0] + 16, position_coingauche[1] + 32]
+        self._position_pieds_origine = self._position_pieds.copy()
         self._image_balo_d = pygame.image.load("balo.png")
         self._image_balo_g = pygame.transform.flip(self._image_balo_d, True, False)
         
@@ -171,6 +194,7 @@ class Balo(Personnage):
         self._cycle_saut = 0
         self._direction = Direction.DROITE
         self._crache = 0
+        self._vies = 3
 
     def dessine(self, ecran):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
@@ -218,8 +242,12 @@ class Balo(Personnage):
         self._crache = 1
         pass
     
+    def perteVie(self):
+        self._vies = self._vies - 1
+        self._position_pieds = self._position_pieds_origine.copy()
+        
     def gestion(self):
-        # print(self._saut)
+        print(self._position_pieds)
         # print(self._cycle_saut)
         # Gestion du feu
         if self._crache > 0:
@@ -238,13 +266,16 @@ class Balo(Personnage):
 
         # Detection collision
         if niveau.collision(self._position_pieds, self._vitesse):
-            self._vitesse[1] = 0
+            #self._vitesse[1] = 0
             self._saut = SautBalo.RIEN
 
         # Mise à jour de la position
-        self._position_pieds[0] += self._vitesse[0]
-        self._position_pieds[1] += self._vitesse[1]
-
+        #self._position_pieds[0] += self._vitesse[0]
+        #self._position_pieds[1] += self._vitesse[1]
+        
+        # Si Balo est à y=+1000, il est tombé dans un trou
+        if self._position_pieds[1] > 1000:
+            self.perteVie()
 
 
 niveau = Niveau()
