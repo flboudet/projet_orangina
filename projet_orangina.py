@@ -109,7 +109,7 @@ class Niveau:
             if sprite:
                 return True
         return False
-    
+
     def collision(self, position_pixel_niveau, vitesse_pixel=[0, 0]):
         # On part du principe qu'on n'est pas encore en collision
         # On regarde s'il y aura une collision en X
@@ -124,7 +124,7 @@ class Niveau:
             return True
         else:
             position_pixel_niveau[0] += vitesse_pixel[0]
-            
+
         # On regarde s'il y aura une collision en Y
         prochaine_position_pixel_niveau_y = [position_pixel_niveau[0],
                                             position_pixel_niveau[1]+vitesse_pixel[1]]
@@ -136,7 +136,7 @@ class Niveau:
             return True
         else:
             position_pixel_niveau[1] += vitesse_pixel[1]
-        
+
         return False
 
 class Personnage:
@@ -162,11 +162,11 @@ class Mechant(Personnage):
         self._position_pieds = [position_coingauche[0] + 16, position_coingauche[1] + 16]
         self._image_mechant = niveau._image_mechant
         self._vitesse = [0.4, 0.]
-        
+
     def dessine(self, ecran):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
         ecran.blit(self._image_mechant, (position_ecran[0] - 16, position_ecran[1] - 16) )
-        
+
     def gestion(self):
         # Detection collision
         if niveau.collision(self._position_pieds, self._vitesse):
@@ -174,7 +174,7 @@ class Mechant(Personnage):
         # Mise à jour de la position
         self._position_pieds[0] += self._vitesse[0]
         self._position_pieds[1] += self._vitesse[1]
-        
+
 class Balo(Personnage):
 
     def __init__(self, position_tile, niveau):
@@ -185,7 +185,7 @@ class Balo(Personnage):
         self._position_pieds_origine = self._position_pieds.copy()
         self._image_balo_d = pygame.image.load("balo.png")
         self._image_balo_g = pygame.transform.flip(self._image_balo_d, True, False)
-        
+
         self._image_balo_feu = [pygame.image.load("balo_crache_1.png"),
                                 pygame.image.load("balo_crache_2.png"),
                                 pygame.image.load("balo_crache_3.png")]
@@ -241,11 +241,11 @@ class Balo(Personnage):
     def crache(self):
         self._crache = 1
         pass
-    
+
     def perteVie(self):
         self._vies = self._vies - 1
         self._position_pieds = self._position_pieds_origine.copy()
-        
+
     def gestion(self):
         print(self._position_pieds)
         # print(self._cycle_saut)
@@ -272,7 +272,7 @@ class Balo(Personnage):
         # Mise à jour de la position
         #self._position_pieds[0] += self._vitesse[0]
         #self._position_pieds[1] += self._vitesse[1]
-        
+
         # Si Balo est à y=+1000, il est tombé dans un trou
         if self._position_pieds[1] > 1000:
             self.perteVie()
@@ -281,6 +281,7 @@ class Balo(Personnage):
 niveau = Niveau()
 
 orig = 0
+origy = 0
 position_pieds_balo = [niveau._position_tile_balo[0]*32 + 16, niveau._position_tile_balo[1]*32 + 32]
 acceleration_saut_balo = 0
 cycle = 0
@@ -299,8 +300,12 @@ while 1:
 
     if touches_pressees[K_a]:
         orig += 1
-    if touches_pressees[K_z]:
+    if touches_pressees[K_e]:
         orig -= 1
+    if touches_pressees[K_z]:
+        origy += 1
+    if touches_pressees[K_s]:
+        origy -= 1
     if touches_pressees[K_LEFT]:
         niveau._balo.court_a_gauche()
     elif touches_pressees[K_RIGHT]:
@@ -319,7 +324,7 @@ while 1:
         #ecran.fill(black)
         ecran.blit(image_ciel, image_ciel_rect)
 
-        # Calcul de la position de la camera
+        # Calcul de la position de la camera, scrolling horizontal
         tiers_ecran = taille_ecran[0]/3
         deuxtiers_ecran = tiers_ecran*2
         if (orig + niveau._balo._position_pieds[0]) < tiers_ecran:
@@ -328,7 +333,7 @@ while 1:
             orig = deuxtiers_ecran - niveau._balo._position_pieds[0]
 
         # Dessin du niveau
-        niveau.change_origine(orig)
+        niveau.change_origine(orig, origy)
         niveau.dessine(ecran)
 
         pygame.display.flip()
