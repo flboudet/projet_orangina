@@ -274,12 +274,12 @@ class Balo(Personnage):
         #self._position_pieds[1] += self._vitesse[1]
 
         # Si Balo est à y=+1000, il est tombé dans un trou
-        if self._position_pieds[1] > 1000:
+        if self._position_pieds[1] > 2000:
             self.perteVie()
 
 
 niveau = Niveau()
-
+ 
 orig = 0
 origy = 0
 position_pieds_balo = [niveau._position_tile_balo[0]*32 + 16, niveau._position_tile_balo[1]*32 + 32]
