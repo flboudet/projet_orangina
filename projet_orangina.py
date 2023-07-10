@@ -325,13 +325,20 @@ while 1:
         ecran.blit(image_ciel, image_ciel_rect)
 
         # Calcul de la position de la camera, scrolling horizontal
-        tiers_ecran = taille_ecran[0]/3
-        deuxtiers_ecran = tiers_ecran*2
-        if (orig + niveau._balo._position_pieds[0]) < tiers_ecran:
-            orig = tiers_ecran - niveau._balo._position_pieds[0]
-        if (orig + niveau._balo._position_pieds[0]) > deuxtiers_ecran:
-            orig = deuxtiers_ecran - niveau._balo._position_pieds[0]
+        tiers_ecran_x = taille_ecran[0]/3
+        deuxtiers_ecran_x = tiers_ecran_x*2
+        if (orig + niveau._balo._position_pieds[0]) < tiers_ecran_x:
+            orig = tiers_ecran_x - niveau._balo._position_pieds[0]
+        if (orig + niveau._balo._position_pieds[0]) > deuxtiers_ecran_x:
+            orig = deuxtiers_ecran_x - niveau._balo._position_pieds[0]
 
+        tiers_ecran_y = taille_ecran[1]/3
+        deuxtiers_ecran_y = tiers_ecran_y*2
+        if (origy + niveau._balo._position_pieds[1]) < tiers_ecran_y:
+            origy = tiers_ecran_y - niveau._balo._position_pieds[1]
+        if (origy + niveau._balo._position_pieds[1]) > deuxtiers_ecran_y:
+            origy = deuxtiers_ecran_y - niveau._balo._position_pieds[1]
+            
         # Dessin du niveau
         niveau.change_origine(orig, origy)
         niveau.dessine(ecran)
