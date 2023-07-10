@@ -28,14 +28,44 @@ def dessine_niveau(niveaudata, origx=0, origy=0):
                     #print(sprite)
                     ecran.blit(sprite, (x*32 + origx, y*32 + origy))
 
+class Bloc:
+    def __init__(self, image):
+        self._image = image
+        
+    def dessine(self, ecran, coord, cycle):
+        ecran.blit(self._image, coord)
+
+class Bloc_brique(Bloc):
+    def __init__(self):
+        self._image_brique = pygame.image.load("bloc_32.png")
+        super().__init__(self._image_brique)
+
+class Bloc_herbe(Bloc):
+    def __init__(self):
+        self._image_herbe = pygame.image.load("bloc_herbe_32.png")
+        super().__init__(self._image_herbe)
+
+class Bloc_grass(Bloc):
+    def __init__(self):
+        self._image_grass_load = [pygame.image.load("bloc_grass_1.png"),
+                                  pygame.image.load("bloc_grass_2.png"),
+                                  pygame.image.load("bloc_grass_3.png")]
+        self._image_grass = [self._image_grass_load[0],
+                             self._image_grass_load[1],
+                             self._image_grass_load[2],
+                             self._image_grass_load[1]]
+        super().__init__(self._image_grass[0])
+        
+    def dessine(self, ecran, coord, cycle):
+        ecran.blit(self._image_grass[int(cycle/10) % 4], coord)
+        
 class Niveau:
     def __init__(self):
         self._personnages = list()
         self._niveaudata = [[dict() for i in range(100)] for j in range(500)]
         self._orig = [0, 0]
         # Chargement des images
-        self._image_brique = pygame.image.load("bloc_32.png")
-        self._image_herbe = pygame.image.load("bloc_herbe_32.png")
+        
         self._image_piece = pygame.image.load("piece.png")
         self._image_mechant = pygame.image.load("mechant.png")
         self._image_papillon = pygame.image.load("chenille_volante.png")
@@ -49,13 +79,16 @@ class Niveau:
         for curline in niveau.readlines():
             x = 0
             for curchar in curline:
+                self._niveaudata[x][y]['bloc'] = None
                 if curchar == 'd':
                     self._balo = Balo([x, y], self)
                     self._position_tile_balo = (x, y)
                 elif curchar == '#':
-                    self._niveaudata[x][y]['sprite'] = self._image_brique
+                    self._niveaudata[x][y]['bloc'] = Bloc_brique()
                 elif curchar == 'b':
-                    self._niveaudata[x][y]['sprite'] = self._image_herbe
+                    self._niveaudata[x][y]['bloc'] = Bloc_herbe()
+                elif curchar == 'g':
+                    self._niveaudata[x][y]['bloc'] = Bloc_grass()
                 elif curchar == 'm':
                     mechant = Mechant([x, y], self)
                     self._personnages.append(mechant)
@@ -72,15 +105,14 @@ class Niveau:
     def change_origine(self, origx=0, origy=0):
         self._orig = [origx, origy]
 
-    def dessine(self, ecran):
+    def dessine(self, ecran, cycle):
         # Dessiner tout le niveau
         for x in range(len(self._niveaudata)):
             for y in range(len(self._niveaudata[x])):
                 if self._niveaudata[x][y]:
-                    sprite = self._niveaudata[x][y]['sprite']
-                    if sprite:
-                        #print(sprite)
-                        ecran.blit(sprite, (x*32 + self._orig[0], y*32 + self._orig[1]))
+                    bloc = self._niveaudata[x][y]['bloc']
+                    if bloc:
+                        bloc.dessine(ecran, (x*32 + self._orig[0], y*32 + self._orig[1]), cycle=cycle)
         # Dessiner Balo
         self._balo.dessine(ecran)
         # Dessiner les méchants
@@ -105,7 +137,7 @@ class Niveau:
         position_tile = self.conversionPositionPixelNiveauVersTile(position_pixel_niveau)
         tile =  self._niveaudata[position_tile[0]][position_tile[1]]
         if tile:
-            sprite = tile['sprite']
+            sprite = tile['bloc']
             if sprite:
                 return True
         return False
@@ -341,7 +373,7 @@ while 1:
             
         # Dessin du niveau
         niveau.change_origine(orig, origy)
-        niveau.dessine(ecran)
+        niveau.dessine(ecran, cycle=cycle)
 
         pygame.display.flip()
         pygame.time.Clock().tick(60)
