@@ -5,6 +5,8 @@ from pygame.locals import *
 import pygame.time
 from pygame import mixer
 
+from personnage import *
+
 print("Projet Orangina")
 
 pygame.init()
@@ -45,6 +47,16 @@ class Bloc_herbe(Bloc):
         self._image_herbe = pygame.image.load("bloc_herbe_32.png")
         super().__init__(self._image_herbe)
 
+class Bloc_piece(Bloc):
+    def __init__(self):
+        self._image_piece = pygame.image.load("piece.png")
+        super().__init__(self._image_piece)
+
+class Bloc_papillon(Bloc):
+    def __init__(self):
+        self._image_papillon = pygame.image.load("chenille_volante.png")
+        super().__init__(self._image_papillon)
+
 class Bloc_grass(Bloc):
     def __init__(self):
         self._image_grass_load = [pygame.image.load("bloc_grass_1.png"),
@@ -65,10 +77,7 @@ class Niveau:
         self._niveaudata = [[dict() for i in range(100)] for j in range(500)]
         self._orig = [0, 0]
         # Chargement des images
-        
-        self._image_piece = pygame.image.load("piece.png")
         self._image_mechant = pygame.image.load("mechant.png")
-        self._image_papillon = pygame.image.load("chenille_volante.png")
 
         # Chargement du niveau
         self.charge("niveau_1.txt")
@@ -94,9 +103,9 @@ class Niveau:
                     self._personnages.append(mechant)
                     #self._niveaudata[x][y]['sprite'] = self._image_mechant
                 elif curchar == 'p':
-                    self._niveaudata[x][y]['sprite'] = self._image_papillon
+                    self._niveaudata[x][y]['bloc'] = Bloc_papillon()
                 elif curchar == '*':
-                    self._niveaudata[x][y]['sprite'] = self._image_piece
+                    self._niveaudata[x][y]['bloc'] = Bloc_piece()
                 else:
                     self._niveaudata[x][y]['sprite'] = None
                 x += 1
@@ -135,6 +144,10 @@ class Niveau:
 
     def pixel_en_collision(self, position_pixel_niveau):
         position_tile = self.conversionPositionPixelNiveauVersTile(position_pixel_niveau)
+        if len(self._niveaudata) < (position_tile[0]+1):
+            return False
+        if len(self._niveaudata[position_tile[0]]) < (position_tile[1]+1):
+            return False
         tile =  self._niveaudata[position_tile[0]][position_tile[1]]
         if tile:
             sprite = tile['bloc']
@@ -170,11 +183,6 @@ class Niveau:
             position_pixel_niveau[1] += vitesse_pixel[1]
 
         return False
-
-class Personnage:
-
-    def __init__(self, position_tile, niveau):
-        self._position_tile = position_tile
 
 class Direction(Enum):
     GAUCHE = -1
@@ -215,14 +223,21 @@ class Balo(Personnage):
         position_coingauche = niveau.conversionPositionTile(self._position_tile)
         self._position_pieds = [position_coingauche[0] + 16, position_coingauche[1] + 32]
         self._position_pieds_origine = self._position_pieds.copy()
-        self._image_balo_d = pygame.image.load("balo.png")
-        self._image_balo_g = pygame.transform.flip(self._image_balo_d, True, False)
+        self._image_balo_d = list()
+        self._image_balo_d.append(pygame.image.load("balo.png"))
+        self._image_balo_d.append(pygame.image.load("balo_course_1.png"))
+        self._image_balo_d.append(pygame.image.load("balo_course_2.png"))
+        # Miroir pour faire les images de gauche
+        self._image_balo_g = list()
+        for balo_image in self._image_balo_d:
+            self._image_balo_g.append(pygame.transform.flip(balo_image, True, False))
 
         self._image_balo_feu = [pygame.image.load("balo_crache_1.png"),
                                 pygame.image.load("balo_crache_2.png"),
                                 pygame.image.load("balo_crache_3.png")]
         self._vitesse = [1, 0]
         self._saut = SautBalo.RIEN
+        self._cycle_marche = 0
         self._cycle_saut = 0
         self._direction = Direction.DROITE
         self._crache = 0
@@ -233,7 +248,7 @@ class Balo(Personnage):
         #position_balo_ecran = (self._position_pieds[0] + orig - 16, position_pieds_balo[1] - 64)
         if self._direction == Direction.DROITE:
             if self._crache == 0:
-                ecran.blit(self._image_balo_d, (position_ecran[0] - 16, position_ecran[1] - 64) )
+                ecran.blit(self._image_balo_d[(int(self._cycle_marche/20)) % 3], (position_ecran[0] - 16, position_ecran[1] - 64) )
             else:
                 if self._crache < 10:
                     ecran.blit(self._image_balo_feu[0], (position_ecran[0] - 16, position_ecran[1] - 64) )
@@ -246,7 +261,11 @@ class Balo(Personnage):
                 else:
                     ecran.blit(self._image_balo_feu[0], (position_ecran[0] - 16, position_ecran[1] - 64) )
         else:
-            ecran.blit(self._image_balo_g, (position_ecran[0] - 16, position_ecran[1] - 64) )
+            image = self._image_balo_g[(int(self._cycle_marche/20)) % 3]
+            if image.get_width() == 64:
+                ecran.blit(image, (position_ecran[0] - 16 - 32, position_ecran[1] - 64) )
+            else:
+                ecran.blit(image, (position_ecran[0] - 16, position_ecran[1] - 64) )
         pass
 
     def court_a_droite(self):
@@ -281,6 +300,13 @@ class Balo(Personnage):
     def gestion(self):
         print(self._position_pieds)
         # print(self._cycle_saut)
+
+        # Gestion du déplacement
+        if self._vitesse[0] != 0:
+            self._cycle_marche += 1
+        else:
+            self._cycle_marche = 0
+
         # Gestion du feu
         if self._crache > 0:
             self._crache += 1
@@ -306,7 +332,7 @@ class Balo(Personnage):
         #self._position_pieds[1] += self._vitesse[1]
 
         # Si Balo est à y=+1000, il est tombé dans un trou
-        if self._position_pieds[1] > 2000:
+        if self._position_pieds[1] > 2500:
             self.perteVie()
 
 
