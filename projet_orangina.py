@@ -6,6 +6,7 @@ import pygame.time
 from pygame import mixer
 
 from personnage import *
+from dimmer import *
 
 print("Projet Orangina")
 
@@ -99,7 +100,7 @@ class Niveau:
                 elif curchar == 'g':
                     self._niveaudata[x][y]['bloc'] = Bloc_grass()
                 elif curchar == 'm':
-                    mechant = Mechant([x, y], self)
+                    mechant = Drhaka([x, y], self)
                     self._personnages.append(mechant)
                     #self._niveaudata[x][y]['sprite'] = self._image_mechant
                 elif curchar == 'p':
@@ -156,6 +157,7 @@ class Niveau:
         return False
 
     def collision(self, position_pixel_niveau, vitesse_pixel=[0, 0]):
+        result = False
         # On part du principe qu'on n'est pas encore en collision
         # On regarde s'il y aura une collision en X
         prochaine_position_pixel_niveau_x = [position_pixel_niveau[0]+vitesse_pixel[0],
@@ -166,7 +168,7 @@ class Niveau:
             #position_tile = self.conversionPositionPixelNiveauVersTile(prochaine_position_pixel_niveau_x)
             position_pixel_niveau[0] += 1
             print("Collision en X")
-            return True
+            result = True
         else:
             position_pixel_niveau[0] += vitesse_pixel[0]
 
@@ -178,11 +180,11 @@ class Niveau:
             vitesse_pixel[1] = 0
             #position_pixel_niveau[1] += 1
             print("Collision en Y")
-            return True
+            result = True
         else:
             position_pixel_niveau[1] += vitesse_pixel[1]
 
-        return False
+        return result
 
 class Direction(Enum):
     GAUCHE = -1
@@ -194,23 +196,27 @@ class SautBalo(Enum):
     SAUT_MOYEN = 2
     SAUT_LONG  = 3
 
-class Mechant(Personnage):
+class Drhaka(Personnage):
     def __init__(self, position_tile, niveau):
         super().__init__(position_tile, niveau)
         self._niveau = niveau
         position_coingauche = niveau.conversionPositionTile(self._position_tile)
         self._position_pieds = [position_coingauche[0] + 16, position_coingauche[1] + 16]
         self._image_mechant = niveau._image_mechant
-        self._vitesse = [0.4, 0.]
+        self._vitesse = [0.1, 0.] 
 
     def dessine(self, ecran):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
-        ecran.blit(self._image_mechant, (position_ecran[0] - 16, position_ecran[1] - 16) )
+        ecran.blit(self._image_mechant, (position_ecran[0] - 16, position_ecran[1] - 32) )
 
     def gestion(self):
+        # Gestion de la gravité
+        self._vitesse[1] += 0.3
         # Detection collision
+        prev_vitesse_x = self._vitesse[0]
         if niveau.collision(self._position_pieds, self._vitesse):
-            self._vitesse[0] = -self._vitesse[0]
+            self._vitesse[0] = -prev_vitesse_x
+
         # Mise à jour de la position
         self._position_pieds[0] += self._vitesse[0]
         self._position_pieds[1] += self._vitesse[1]
@@ -242,6 +248,7 @@ class Balo(Personnage):
         self._direction = Direction.DROITE
         self._crache = 0
         self._vies = 3
+        self._derniere_position_posee = self._position_pieds.copy
 
     def dessine(self, ecran):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
@@ -296,6 +303,11 @@ class Balo(Personnage):
     def perteVie(self):
         self._vies = self._vies - 1
         self._position_pieds = self._position_pieds_origine.copy()
+        fondu = Dimmer(1)
+        for i in range(64):
+            fondu.dim(i)
+            pygame.time.Clock().tick(60)
+
 
     def gestion(self):
         print(self._position_pieds)
@@ -326,13 +338,15 @@ class Balo(Personnage):
         if niveau.collision(self._position_pieds, self._vitesse):
             #self._vitesse[1] = 0
             self._saut = SautBalo.RIEN
+            # on mémorise la dernière plateforme sur laquelle on s'est posé
+            self._derniere_position_posee = self._position_pieds.copy()
 
         # Mise à jour de la position
         #self._position_pieds[0] += self._vitesse[0]
         #self._position_pieds[1] += self._vitesse[1]
 
-        # Si Balo est à y=+1000, il est tombé dans un trou
-        if self._position_pieds[1] > 2500:
+        # Si Balo est à y=+1000 de sa dernière position posée il est tombé dans un trou
+        if self._position_pieds[1] - self._derniere_position_posee[1] > 2000:
             self.perteVie()
 
 
@@ -344,8 +358,9 @@ position_pieds_balo = [niveau._position_tile_balo[0]*32 + 16, niveau._position_t
 acceleration_saut_balo = 0
 cycle = 0
 mixer.init()
-mixer.music.load('niveau1-1.xm')
-mixer.music.play()
+#mixer.music.load('Crystal_&_Lord_R.mp3')
+mixer.music.load('Master.mp3')
+mixer.music.play(-1)
 
 while 1:
     cycle += 1
