@@ -6,6 +6,7 @@ import pygame.time
 from pygame import mixer
 
 from personnage import *
+from esprit_des_nuages import *
 from dimmer import *
 
 print("Projet Orangina")
@@ -75,8 +76,9 @@ class Bloc_grass(Bloc):
 class Niveau:
     def __init__(self):
         self._personnages = list()
-        self._niveaudata = [[dict() for i in range(100)] for j in range(500)]
+        self._niveaudata = [[dict() for i in range(100)] for j in range(1000)]
         self._orig = [0, 0]
+        self._affiche_dialogue = False
         # Chargement des images
         self._image_mechant = pygame.image.load("mechant.png")
 
@@ -102,7 +104,9 @@ class Niveau:
                 elif curchar == 'm':
                     mechant = Drhaka([x, y], self)
                     self._personnages.append(mechant)
-                    #self._niveaudata[x][y]['sprite'] = self._image_mechant
+                elif curchar == 'e':
+                    esprit = EspritDesNuages([x, y], self)
+                    self._personnages.append(esprit)
                 elif curchar == 'p':
                     self._niveaudata[x][y]['bloc'] = Bloc_papillon()
                 elif curchar == '*':
@@ -115,7 +119,7 @@ class Niveau:
     def change_origine(self, origx=0, origy=0):
         self._orig = [origx, origy]
 
-    def dessine(self, ecran, cycle):
+    def dessine(self, ecran : pygame.Surface, cycle):
         # Dessiner tout le niveau
         for x in range(len(self._niveaudata)):
             for y in range(len(self._niveaudata[x])):
@@ -128,6 +132,13 @@ class Niveau:
         # Dessiner les méchants
         for personnage in self._personnages:
             personnage.dessine(ecran)
+        # Dessiner le dialogue
+        if self._affiche_dialogue:
+            ecran.fill((0, 0, 100, 40), (100, 100, 600, 400), pygame.BLEND_RGBA_MULT)
+
+    def dialogue(self):
+        self._affiche_dialogue = True
+        self._texte_dialogue = "Hello !"
 
     def gestion(self):
         for personnage in self._personnages:
@@ -164,9 +175,13 @@ class Niveau:
                                             position_pixel_niveau[1]]
         # S'il y a collision, on annule la vitesse en X
         if self.pixel_en_collision(prochaine_position_pixel_niveau_x):
+            position_tile = self.conversionPositionPixelNiveauVersTile(prochaine_position_pixel_niveau_x)
+            position_tile_pixel = self.conversionPositionTile(position_tile)
+            if vitesse_pixel[0] < 0:
+                position_pixel_niveau[0] = position_tile_pixel[0]+32
+            else:
+                position_pixel_niveau[0] = position_tile_pixel[0] - 1
             vitesse_pixel[0] = 0
-            #position_tile = self.conversionPositionPixelNiveauVersTile(prochaine_position_pixel_niveau_x)
-            position_pixel_niveau[0] += 1
             print("Collision en X")
             result = True
         else:
@@ -177,8 +192,13 @@ class Niveau:
                                             position_pixel_niveau[1]+vitesse_pixel[1]]
         # S'il y a collision, on annule la vitesse en Y
         if self.pixel_en_collision(prochaine_position_pixel_niveau_y):
+            position_tile = self.conversionPositionPixelNiveauVersTile(prochaine_position_pixel_niveau_x)
+            position_tile_pixel = self.conversionPositionTile(position_tile)
+            if vitesse_pixel[1] < 0:
+                position_pixel_niveau[1] = position_tile_pixel[1]
+            else:
+                position_pixel_niveau[1] = position_tile_pixel[1]+31
             vitesse_pixel[1] = 0
-            #position_pixel_niveau[1] += 1
             print("Collision en Y")
             result = True
         else:
@@ -201,9 +221,9 @@ class Drhaka(Personnage):
         super().__init__(position_tile, niveau)
         self._niveau = niveau
         position_coingauche = niveau.conversionPositionTile(self._position_tile)
-        self._position_pieds = [position_coingauche[0] + 16, position_coingauche[1] + 16]
+        self._position_pieds = [position_coingauche[0] + 16, position_coingauche[1] + 32]
         self._image_mechant = niveau._image_mechant
-        self._vitesse = [0.1, 0.] 
+        self._vitesse = [0.2, 0.] 
 
     def dessine(self, ecran):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
@@ -215,7 +235,8 @@ class Drhaka(Personnage):
         # Detection collision
         prev_vitesse_x = self._vitesse[0]
         if niveau.collision(self._position_pieds, self._vitesse):
-            self._vitesse[0] = -prev_vitesse_x
+            if self._vitesse[0] == 0:
+                self._vitesse[0] = -prev_vitesse_x
 
         # Mise à jour de la position
         self._position_pieds[0] += self._vitesse[0]
@@ -248,7 +269,7 @@ class Balo(Personnage):
         self._direction = Direction.DROITE
         self._crache = 0
         self._vies = 3
-        self._derniere_position_posee = self._position_pieds.copy
+        self._derniere_position_posee = self._position_pieds.copy()
 
     def dessine(self, ecran):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
@@ -359,8 +380,13 @@ acceleration_saut_balo = 0
 cycle = 0
 mixer.init()
 #mixer.music.load('Crystal_&_Lord_R.mp3')
-mixer.music.load('Master.mp3')
+#mixer.music.load('dark_fire.mp3')
+mixer.music.load('balo_1-1.mp3')
+
 mixer.music.play(-1)
+
+gigot = pygame.image.load("gigot.png")
+font = pygame.font.SysFont(None, 32)
 
 while 1:
     cycle += 1
@@ -379,6 +405,8 @@ while 1:
         origy += 1
     if touches_pressees[K_s]:
         origy -= 1
+    if touches_pressees[K_d]:
+        niveau.dialogue()
     if touches_pressees[K_LEFT]:
         niveau._balo.court_a_gauche()
     elif touches_pressees[K_RIGHT]:
@@ -415,6 +443,14 @@ while 1:
         # Dessin du niveau
         niveau.change_origine(orig, origy)
         niveau.dessine(ecran, cycle=cycle)
+
+        # Dessin du nombre de vies
+        ecran.blit(gigot, (10, 0))
+        texteVies = "x{0}".format(niveau._balo._vies)
+        vies = font.render(texteVies, False, pygame.color.THECOLORS["goldenrod1"])
+        viesdark = font.render(texteVies, False, pygame.color.THECOLORS["black"])
+        ecran.blit(viesdark, (66, 34))
+        ecran.blit(vies, (64, 32))
 
         pygame.display.flip()
         pygame.time.Clock().tick(60)
