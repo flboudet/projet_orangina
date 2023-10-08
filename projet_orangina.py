@@ -5,8 +5,12 @@ from pygame.locals import *
 import pygame.time
 from pygame import mixer
 
+import yaml
+import re
 from personnage import *
+from dialogue import *
 from esprit_des_nuages import *
+from teleporteur import *
 from dimmer import *
 
 print("Projet Orangina")
@@ -86,6 +90,9 @@ class Niveau:
         self.charge("niveau_1.txt")
 
     def charge(self, cheminNiveau):
+        extraniveau = open(cheminNiveau + ".yaml")
+        extraniveau_data = yaml.load(extraniveau, Loader=yaml.Loader)
+        print(extraniveau_data)
         niveau = open(cheminNiveau)
         x, y = 0, 0
         for curline in niveau.readlines():
@@ -104,9 +111,12 @@ class Niveau:
                 elif curchar == 'm':
                     mechant = Drhaka([x, y], self)
                     self._personnages.append(mechant)
-                elif curchar == 'e':
-                    esprit = EspritDesNuages([x, y], self)
-                    self._personnages.append(esprit)
+                elif re.match("[0-9]", curchar):
+                    extradata = extraniveau_data["object"][int(curchar)]
+                    klass = globals()[extradata["class"]]
+                    perso = klass([x, y], self, extradata)
+                    #perso = EspritDesNuages([x, y], self, extradata)
+                    self._personnages.append(perso)
                 elif curchar == 'p':
                     self._niveaudata[x][y]['bloc'] = Bloc_papillon()
                 elif curchar == '*':
@@ -134,16 +144,22 @@ class Niveau:
             personnage.dessine(ecran)
         # Dessiner le dialogue
         if self._affiche_dialogue:
-            ecran.fill((0, 0, 100, 40), (100, 100, 600, 400), pygame.BLEND_RGBA_MULT)
+            self._dialogue.dessine(ecran)
 
-    def dialogue(self):
-        self._affiche_dialogue = True
-        self._texte_dialogue = "Hello !"
+    def afficheDialogue(self, texte):
+        if len(texte):
+            self._affiche_dialogue = True
+            self._dialogue = Dialogue(texte)
+        else:
+            self._affiche_dialogue = False
 
     def gestion(self):
         for personnage in self._personnages:
             personnage.gestion()
         self._balo.gestion()
+        if self._affiche_dialogue:
+            self._dialogue.gestion()
+
 
     def conversionPositionTile(self, position_tile):
         return [position_tile[0] * 32, position_tile[1] * 32]
@@ -182,7 +198,7 @@ class Niveau:
             else:
                 position_pixel_niveau[0] = position_tile_pixel[0] - 1
             vitesse_pixel[0] = 0
-            print("Collision en X")
+            # print("Collision en X")
             result = True
         else:
             position_pixel_niveau[0] += vitesse_pixel[0]
@@ -199,7 +215,7 @@ class Niveau:
             else:
                 position_pixel_niveau[1] = position_tile_pixel[1]+31
             vitesse_pixel[1] = 0
-            print("Collision en Y")
+            # print("Collision en Y")
             result = True
         else:
             position_pixel_niveau[1] += vitesse_pixel[1]
@@ -243,6 +259,7 @@ class Drhaka(Personnage):
         self._position_pieds[1] += self._vitesse[1]
 
 class Balo(Personnage):
+    _niveau : Niveau
 
     def __init__(self, position_tile, niveau):
         super().__init__(position_tile, niveau)
@@ -270,6 +287,9 @@ class Balo(Personnage):
         self._crache = 0
         self._vies = 3
         self._derniere_position_posee = self._position_pieds.copy()
+
+    def getPositionPixel(self):
+        return self._position_pieds
 
     def dessine(self, ecran):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
@@ -321,6 +341,15 @@ class Balo(Personnage):
         self._crache = 1
         pass
 
+    def action(self):
+        for perso in self._niveau._personnages:
+            if perso != self:
+                distance_perso = self.distance(perso)
+                if distance_perso < 96:
+                    perso.actionne()
+                    return;
+
+
     def perteVie(self):
         self._vies = self._vies - 1
         self._position_pieds = self._position_pieds_origine.copy()
@@ -331,7 +360,7 @@ class Balo(Personnage):
 
 
     def gestion(self):
-        print(self._position_pieds)
+        # print(self._position_pieds)
         # print(self._cycle_saut)
 
         # Gestion du déplacement
@@ -388,6 +417,8 @@ mixer.music.play(-1)
 gigot = pygame.image.load("gigot.png")
 font = pygame.font.SysFont(None, 32)
 
+_actionne = False
+
 while 1:
     cycle += 1
 
@@ -406,7 +437,15 @@ while 1:
     if touches_pressees[K_s]:
         origy -= 1
     if touches_pressees[K_d]:
-        niveau.dialogue()
+        if not _actionne:
+            niveau._balo.action()
+            _actionne = True
+    else:
+        _actionne = False
+
+    if touches_pressees[K_f]:
+        niveau.afficheDialogue("")
+
     if touches_pressees[K_LEFT]:
         niveau._balo.court_a_gauche()
     elif touches_pressees[K_RIGHT]:

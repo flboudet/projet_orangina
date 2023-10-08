@@ -5,9 +5,8 @@ import pygame
 
 class EspritDesNuages(Personnage):
 
-    def __init__(self, position_tile, niveau):
+    def __init__(self, position_tile, niveau, extradata):
         super().__init__(position_tile, niveau)
-        self._niveau = niveau
         position_coingauche = niveau.conversionPositionTile(self._position_tile)
         self._position_pieds = [position_coingauche[0] + 16, position_coingauche[1] + 32]
         self._images = [
@@ -15,6 +14,7 @@ class EspritDesNuages(Personnage):
             pygame.image.load("esprit_des_nuages_2.png")
         ]
         self._animation = 0
+        self._texte = extradata["text"]
 
     def dessine(self, ecran : pygame.Surface):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
@@ -25,3 +25,6 @@ class EspritDesNuages(Personnage):
         self._animation += 1
         pass
 
+    def actionne(self):
+        self._niveau.afficheDialogue(self._texte)
+    

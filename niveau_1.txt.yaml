@@ -1,0 +1,30 @@
+object:
+  1:
+    class: EspritDesNuages
+    text: |
+      - Hello
+      - Aaaaaaaaah!
+  
+  2:
+    class: EspritDesNuages
+    text: |
+      - Hello
+      - Hello mon ami
+      - Aaaaaaaah !
+
+  3:
+    class: EspritDesNuages
+    text: |
+      ......
+      Aaaaaaaah !....
+      ........
+
+  4:
+    class: Teleporteur
+    destination: ceci_est_la_cle
+  
+  5:
+    class: Teleporteur
+    destination: ceci_est_la_cle
+
+
