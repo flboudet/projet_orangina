@@ -8,6 +8,7 @@ from pygame import mixer
 import yaml
 import re
 from personnage import *
+from drakha import *
 from dialogue import *
 from esprit_des_nuages import *
 from teleporteur import *
@@ -18,8 +19,10 @@ print("Projet Orangina")
 pygame.init()
 
 taille_ecran = 800, 600
-ecran = pygame.display.set_mode(taille_ecran)
+ecran = pygame.display.set_mode(size = taille_ecran, flags=pygame.SCALED|pygame.DOUBLEBUF|pygame.SHOWN)
 
+print("SDL version:{0}".format(pygame.get_sdl_version()))
+print("SDL backend: {0}".format(pygame.display.get_driver()))
 image_ciel = pygame.image.load("ciel.png")
 image_ciel_rect = image_ciel.get_rect()
 
@@ -208,12 +211,12 @@ class Niveau:
                                             position_pixel_niveau[1]+vitesse_pixel[1]]
         # S'il y a collision, on annule la vitesse en Y
         if self.pixel_en_collision(prochaine_position_pixel_niveau_y):
-            position_tile = self.conversionPositionPixelNiveauVersTile(prochaine_position_pixel_niveau_x)
+            position_tile = self.conversionPositionPixelNiveauVersTile(prochaine_position_pixel_niveau_y)
             position_tile_pixel = self.conversionPositionTile(position_tile)
             if vitesse_pixel[1] < 0:
-                position_pixel_niveau[1] = position_tile_pixel[1]
+                position_pixel_niveau[1] = position_tile_pixel[1]+33
             else:
-                position_pixel_niveau[1] = position_tile_pixel[1]+31
+                position_pixel_niveau[1] = position_tile_pixel[1]-0.1
             vitesse_pixel[1] = 0
             # print("Collision en Y")
             result = True
@@ -231,32 +234,6 @@ class SautBalo(Enum):
     SAUT_COURT = 1
     SAUT_MOYEN = 2
     SAUT_LONG  = 3
-
-class Drhaka(Personnage):
-    def __init__(self, position_tile, niveau):
-        super().__init__(position_tile, niveau)
-        self._niveau = niveau
-        position_coingauche = niveau.conversionPositionTile(self._position_tile)
-        self._position_pieds = [position_coingauche[0] + 16, position_coingauche[1] + 32]
-        self._image_mechant = niveau._image_mechant
-        self._vitesse = [0.2, 0.] 
-
-    def dessine(self, ecran):
-        position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
-        ecran.blit(self._image_mechant, (position_ecran[0] - 16, position_ecran[1] - 32) )
-
-    def gestion(self):
-        # Gestion de la gravité
-        self._vitesse[1] += 0.3
-        # Detection collision
-        prev_vitesse_x = self._vitesse[0]
-        if niveau.collision(self._position_pieds, self._vitesse):
-            if self._vitesse[0] == 0:
-                self._vitesse[0] = -prev_vitesse_x
-
-        # Mise à jour de la position
-        self._position_pieds[0] += self._vitesse[0]
-        self._position_pieds[1] += self._vitesse[1]
 
 class Balo(Personnage):
     _niveau : Niveau
