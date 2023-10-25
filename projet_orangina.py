@@ -265,12 +265,18 @@ class Balo(Personnage):
         self._crache = 0
         self._vies = 3
         self._energie = 4
+        self._invulnerable = 0
         self._derniere_position_posee = self._position_pieds.copy()
 
     def getPositionPixel(self):
         return self._position_pieds
 
     def dessine(self, ecran):
+        # Clignottement quand on est invulnérable
+        if self._invulnerable > 0:
+            if self._invulnerable % 30 > 15:
+                return
+
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
         #position_balo_ecran = (self._position_pieds[0] + orig - 16, position_pieds_balo[1] - 64)
         if self._direction == Direction.DROITE:
@@ -344,12 +350,16 @@ class Balo(Personnage):
             pygame.time.Clock().tick(60)
 
     def perteEnergie(self, quantite):
+        if self._invulnerable:
+            return
+        
         self.stoppe()
         if self._direction == Direction.DROITE:
             self._vitesse = [-10, -5]
         else:
             self._vitesse = [10, -5]
         self._energie -= quantite
+        self._invulnerable = 500
         if self._energie < 1:
             self.perteVie()
 
@@ -400,6 +410,10 @@ class Balo(Personnage):
         # Mise à jour de la position
         #self._position_pieds[0] += self._vitesse[0]
         #self._position_pieds[1] += self._vitesse[1]
+
+        # Gestion de l'invulnérabilité
+        if self._invulnerable > 0:
+            self._invulnerable -= 1
 
         # Si Balo est à y=+1000 de sa dernière position posée il est tombé dans un trou
         if self._position_pieds[1] - self._derniere_position_posee[1] > 1200:
