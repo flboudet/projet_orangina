@@ -11,6 +11,7 @@ from personnage import *
 from drakha import *
 from dialogue import *
 from esprit_des_nuages import *
+from esprit_savoir import *
 from teleporteur import *
 from dimmer import *
 
@@ -83,7 +84,7 @@ class Bloc_grass(Bloc):
 class Niveau:
     def __init__(self):
         self._personnages = list()
-        self._niveaudata = [[dict() for i in range(100)] for j in range(1000)]
+        self._niveaudata = [[dict() for i in range(1000)] for j in range(1000)]
         self._orig = [0, 0]
         self._affiche_dialogue = False
         # Chargement des images
@@ -133,8 +134,11 @@ class Niveau:
         self._orig = [origx, origy]
 
     def dessine(self, ecran : pygame.Surface, cycle):
-        # Dessiner tout le niveau
-        for x in range(len(self._niveaudata)):
+        # Dessiner uniquement ce qu'on voit à l'écran
+        first_tile_x = int(-self._orig[0] / 32) - 1
+        last_tile_x = int(first_tile_x + (taille_ecran[0]/32)) + 2
+
+        for x in range(first_tile_x, last_tile_x): #range(len(self._niveaudata)):
             for y in range(len(self._niveaudata[x])):
                 if self._niveaudata[x][y]:
                     bloc = self._niveaudata[x][y]['bloc']
@@ -225,10 +229,6 @@ class Niveau:
 
         return result
 
-class Direction(Enum):
-    GAUCHE = -1
-    DROITE = 1
-
 class SautBalo(Enum):
     RIEN = 0
     SAUT_COURT = 1
@@ -256,13 +256,15 @@ class Balo(Personnage):
         self._image_balo_feu = [pygame.image.load("balo_crache_1.png"),
                                 pygame.image.load("balo_crache_2.png"),
                                 pygame.image.load("balo_crache_3.png")]
-        self._vitesse = [1, 0]
+        self._vitesse = [0, 0]
         self._saut = SautBalo.RIEN
         self._cycle_marche = 0
         self._cycle_saut = 0
         self._direction = Direction.DROITE
+        self._en_course = False
         self._crache = 0
         self._vies = 3
+        self._energie = 4
         self._derniere_position_posee = self._position_pieds.copy()
 
     def getPositionPixel(self):
@@ -295,14 +297,17 @@ class Balo(Personnage):
 
     def court_a_droite(self):
         self._vitesse[0] = 2
+        self._en_course = True
         self._direction = Direction.DROITE
 
     def court_a_gauche(self):
         self._vitesse[0] = -2
+        self._en_course = True
         self._direction = Direction.GAUCHE
 
     def stoppe(self):
         self._vitesse[0] = 0
+        self._en_course = False
 
     def saute(self):
         if self._saut == SautBalo.RIEN:
@@ -329,12 +334,24 @@ class Balo(Personnage):
 
     def perteVie(self):
         self._vies = self._vies - 1
-        self._position_pieds = self._position_pieds_origine.copy()
+        self._energie = 4
+        self._position_pieds = self._position_pieds_origine.copy() # self._derniere_position_posee.copy()
+        self._vitesse = [0,0]
+        self._saut = SautBalo.RIEN
         fondu = Dimmer(1)
         for i in range(64):
             fondu.dim(i)
             pygame.time.Clock().tick(60)
 
+    def perteEnergie(self, quantite):
+        self.stoppe()
+        if self._direction == Direction.DROITE:
+            self._vitesse = [-10, -5]
+        else:
+            self._vitesse = [10, -5]
+        self._energie -= quantite
+        if self._energie < 1:
+            self.perteVie()
 
     def gestion(self):
         # print(self._position_pieds)
@@ -357,6 +374,11 @@ class Balo(Personnage):
                  or (self._saut == SautBalo.SAUT_MOYEN and self._cycle_saut > 40) \
                  or (self._saut == SautBalo.SAUT_LONG  and self._cycle_saut > 60):
             self._vitesse[1] += 0.3
+            # Gestion du freinage
+            if not self._en_course:
+                self._vitesse[0] /= 1.3
+            if abs(self._vitesse[0]) < 0.4:
+                self._vitesse[0] = 0
             # self._saut = SautBalo.RIEN
         else:
             self._cycle_saut += 1
@@ -368,12 +390,19 @@ class Balo(Personnage):
             # on mémorise la dernière plateforme sur laquelle on s'est posé
             self._derniere_position_posee = self._position_pieds.copy()
 
+        # Detection contact personnages (TODO: harmoniser avec collisions ?)
+        for perso in self._niveau._personnages:
+            if perso != self:
+                distance_perso = self.distance(perso)
+                if distance_perso < 28:
+                    perso.contact()
+
         # Mise à jour de la position
         #self._position_pieds[0] += self._vitesse[0]
         #self._position_pieds[1] += self._vitesse[1]
 
         # Si Balo est à y=+1000 de sa dernière position posée il est tombé dans un trou
-        if self._position_pieds[1] - self._derniere_position_posee[1] > 2000:
+        if self._position_pieds[1] - self._derniere_position_posee[1] > 1200:
             self.perteVie()
 
 
@@ -391,6 +420,10 @@ mixer.music.load('balo_1-1.mp3')
 
 mixer.music.play(-1)
 
+energies = [pygame.image.load("vie_1.png"),
+            pygame.image.load("vie_2.png"),
+            pygame.image.load("vie_3.png"),
+            pygame.image.load("vie_4.png")]
 gigot = pygame.image.load("gigot.png")
 font = pygame.font.SysFont(None, 32)
 
@@ -424,11 +457,15 @@ while 1:
         niveau.afficheDialogue("")
 
     if touches_pressees[K_LEFT]:
-        niveau._balo.court_a_gauche()
+        if not niveau._balo._en_course:
+            niveau._balo.court_a_gauche()
     elif touches_pressees[K_RIGHT]:
-        niveau._balo.court_a_droite()
+        if not niveau._balo._en_course:
+            niveau._balo.court_a_droite()
     else:
-        niveau._balo.stoppe()
+        if niveau._balo._en_course:
+            niveau._balo.stoppe()
+    
     if touches_pressees[K_SPACE]:
         niveau._balo.saute()
     if touches_pressees[K_w]:
@@ -467,6 +504,8 @@ while 1:
         viesdark = font.render(texteVies, False, pygame.color.THECOLORS["black"])
         ecran.blit(viesdark, (66, 34))
         ecran.blit(vies, (64, 32))
+        # Dessin de l'energie
+        ecran.blit(energies[4 - niveau._balo._energie], (taille_ecran[0] - 70, 0))
 
         pygame.display.flip()
         pygame.time.Clock().tick(60)

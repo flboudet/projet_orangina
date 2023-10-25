@@ -13,11 +13,14 @@ object:
       - Aaaaaaaah !
 
   3:
-    class: EspritDesNuages
-    text: |
+    class: EspritSavoir
+    text_1: |
       ......
       Aaaaaaaah !....
       ........
+    text_2: |
+      Mes esprits, va les chercher !
+      Mets-les dans cette bouteille !
 
   4:
     class: Teleporteur

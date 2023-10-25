@@ -1,4 +1,9 @@
 import math
+from enum import Enum
+
+class Direction(Enum):
+    GAUCHE = -1
+    DROITE = 1
 
 class Personnage:
     _position_tile : list
@@ -20,3 +25,5 @@ class Personnage:
     def actionne(self):
         pass
     
+    def contact(self):
+        pass
