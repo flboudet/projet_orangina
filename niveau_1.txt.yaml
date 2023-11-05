@@ -20,7 +20,7 @@ object:
       ........
     text_2: |
       Mes esprits, va les chercher !
-      Mets-les dans cette bouteille !
+      Mets-les dans ce flacon !
 
   4:
     class: Teleporteur
@@ -30,4 +30,7 @@ object:
     class: Teleporteur
     destination: ceci_est_la_cle
 
+  6:
+    class: AmePerdue
+    
 

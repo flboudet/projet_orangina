@@ -9,7 +9,10 @@ class EtatEspritSavoir(Enum):
     EN_TRAIN_DE_SE_TRANSFORMER = 2
     TRANSFORME_EN_FANTOME = 3
 
+
+
 class EspritSavoir(Personnage):
+    _esprit_savoir = None
 
     def __init__(self, position_tile, niveau, extradata):
         super().__init__(position_tile, niveau)
@@ -35,6 +38,7 @@ class EspritSavoir(Personnage):
         self._texte_1 = extradata["text_1"]
         self._texte_2 = extradata["text_2"]
         self._etat_esprit = EtatEspritSavoir.JAMAIS_PARLE
+        EspritSavoir._esprit_savoir = self
 
     def dessine(self, ecran : pygame.Surface):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)

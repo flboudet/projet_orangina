@@ -12,6 +12,7 @@ from drakha import *
 from dialogue import *
 from esprit_des_nuages import *
 from esprit_savoir import *
+from ame_perdue import *
 from teleporteur import *
 from dimmer import *
 
@@ -56,6 +57,11 @@ class Bloc_herbe(Bloc):
     def __init__(self):
         self._image_herbe = pygame.image.load("bloc_herbe_32.png")
         super().__init__(self._image_herbe)
+
+class Bloc_golder(Bloc):
+    def __init__(self):
+        self._image_golder = pygame.image.load("pierre_golder.png")
+        super().__init__(self._image_golder)
 
 class Bloc_piece(Bloc):
     def __init__(self):
@@ -112,6 +118,8 @@ class Niveau:
                     self._niveaudata[x][y]['bloc'] = Bloc_herbe()
                 elif curchar == 'g':
                     self._niveaudata[x][y]['bloc'] = Bloc_grass()
+                elif curchar == 'G':
+                    self._niveaudata[x][y]['bloc'] = Bloc_golder()
                 elif curchar == 'm':
                     mechant = Drhaka([x, y], self)
                     self._personnages.append(mechant)
@@ -440,6 +448,11 @@ energies = [pygame.image.load("vie_1.png"),
             pygame.image.load("vie_4.png")]
 gigot = pygame.image.load("gigot.png")
 font = pygame.font.SysFont(None, 32)
+flacons = [pygame.image.load("Flacon_0.png"),
+            pygame.image.load("Flacon_1.png"),
+            pygame.image.load("Flacon_2.png"),
+            pygame.image.load("Flacon_3.png"),
+            pygame.image.load("Flacon_4.png")]
 
 _actionne = False
 
