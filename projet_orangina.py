@@ -12,6 +12,8 @@ from drakha import *
 from dialogue import *
 from esprit_des_nuages import *
 from esprit_savoir import *
+from esprit_vendeur import *
+
 from ame_perdue import *
 from teleporteur import *
 from dimmer import *
@@ -264,6 +266,10 @@ class Balo(Personnage):
         self._image_balo_feu = [pygame.image.load("balo_crache_1.png"),
                                 pygame.image.load("balo_crache_2.png"),
                                 pygame.image.load("balo_crache_3.png")]
+        self._image_balo_prend_d = [pygame.image.load("balo_ramasse_1.png"),
+                                    pygame.image.load("balo_ramasse_2.png")]
+        self._image_balo_prend_g = [pygame.transform.flip(x, True, False) for x in self._image_balo_prend_d]
+
         self._vitesse = [0, 0]
         self._saut = SautBalo.RIEN
         self._cycle_marche = 0
@@ -271,6 +277,7 @@ class Balo(Personnage):
         self._direction = Direction.DROITE
         self._en_course = False
         self._crache = 0
+        self._prend = 0
         self._vies = 3
         self._energie = 4
         self._invulnerable = 0
@@ -288,9 +295,9 @@ class Balo(Personnage):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
         #position_balo_ecran = (self._position_pieds[0] + orig - 16, position_pieds_balo[1] - 64)
         if self._direction == Direction.DROITE:
-            if self._crache == 0:
+            if self._crache == 0 and self._prend == 0:
                 ecran.blit(self._image_balo_d[(int(self._cycle_marche/20)) % 3], (position_ecran[0] - 16, position_ecran[1] - 64) )
-            else:
+            elif self._crache > 0:
                 if self._crache < 10:
                     ecran.blit(self._image_balo_feu[0], (position_ecran[0] - 16, position_ecran[1] - 64) )
                 elif self._crache < 20:
@@ -301,8 +308,19 @@ class Balo(Personnage):
                     ecran.blit(self._image_balo_feu[1], (position_ecran[0] - 16, position_ecran[1] - 64) )
                 else:
                     ecran.blit(self._image_balo_feu[0], (position_ecran[0] - 16, position_ecran[1] - 64) )
+            elif self._prend > 0:
+                if self._prend < 50:
+                    ecran.blit(self._image_balo_prend_d[0], (position_ecran[0] - 16, position_ecran[1] - 64) );
+                else:
+                    ecran.blit(self._image_balo_prend_d[1], (position_ecran[0] - 16, position_ecran[1] - 64) );
         else:
-            image = self._image_balo_g[(int(self._cycle_marche/20)) % 3]
+            if self._prend == 0:
+                image = self._image_balo_g[(int(self._cycle_marche/20)) % 3]
+            else:
+                if self._prend < 50:
+                    image = self._image_balo_prend_g[0]
+                else:
+                    image = self._image_balo_prend_g [1]
             if image.get_width() == 64:
                 ecran.blit(image, (position_ecran[0] - 16 - 32, position_ecran[1] - 64) )
             else:
@@ -335,6 +353,10 @@ class Balo(Personnage):
 
     def crache(self):
         self._crache = 1
+        pass
+
+    def prend(self):
+        self._prend = 1
         pass
 
     def action(self):
@@ -386,6 +408,11 @@ class Balo(Personnage):
             self._crache += 1
             if self._crache == 100:
                 self._crache = 0
+        # Gestion du prend
+        if self._prend > 0:
+            self._prend += 1
+            if self._prend == 100:
+                self._prend = 0
         # Gestion de la gravité et des sauts
         if self._saut == SautBalo.RIEN \
                  or (self._saut == SautBalo.SAUT_COURT and self._cycle_saut > 20) \
@@ -448,11 +475,6 @@ energies = [pygame.image.load("vie_1.png"),
             pygame.image.load("vie_4.png")]
 gigot = pygame.image.load("gigot.png")
 font = pygame.font.SysFont(None, 32)
-flacons = [pygame.image.load("Flacon_0.png"),
-            pygame.image.load("Flacon_1.png"),
-            pygame.image.load("Flacon_2.png"),
-            pygame.image.load("Flacon_3.png"),
-            pygame.image.load("Flacon_4.png")]
 
 _actionne = False
 

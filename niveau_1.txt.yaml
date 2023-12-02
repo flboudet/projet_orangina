@@ -1,10 +1,13 @@
 object:
   1:
-    class: EspritDesNuages
-    text: |
-      - Hello
-      - Aaaaaaaaah!
-  
+    class: EspritVendeur
+    text_1: |
+      Un conseille contre 5 
+      pièce, d'accore? 
+    text_2: |
+      Il y a un grand réseau de
+      téléporteurs, donc ils
+      ammènent à plusieurs endroits
   2:
     class: EspritDesNuages
     text: |
@@ -21,6 +24,15 @@ object:
     text_2: |
       Mes esprits, va les chercher !
       Mets-les dans ce flacon !
+    text_3: |
+      Tu n'as pas retrouvé tous mes esprits !
+      Il te reste {0} esprits à trouver !
+    text_4: |
+      ...
+      Merci !
+    text_5: |
+      
+      Comme récompense, je vais t'aider.
 
   4:
     class: Teleporteur
