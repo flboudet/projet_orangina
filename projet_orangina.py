@@ -9,20 +9,25 @@ import yaml
 import re
 from personnage import *
 from drakha import *
+from papition import *
 from dialogue import *
 from esprit_des_nuages import *
 from esprit_savoir import *
 from esprit_vendeur import *
+from bloc_sauvegarde import *
+from piece import *
 
 from ame_perdue import *
 from teleporteur import *
 from dimmer import *
+from hints import *
 
 print("Projet Orangina")
 
 pygame.init()
 
 taille_ecran = 800, 600
+#ecran = pygame.display.set_mode(size = taille_ecran, flags=pygame.SCALED|pygame.DOUBLEBUF|pygame.SHOWN|pygame.FULLSCREEN)
 ecran = pygame.display.set_mode(size = taille_ecran, flags=pygame.SCALED|pygame.DOUBLEBUF|pygame.SHOWN)
 
 print("SDL version:{0}".format(pygame.get_sdl_version()))
@@ -46,7 +51,13 @@ def dessine_niveau(niveaudata, origx=0, origy=0):
 class Bloc:
     def __init__(self, image):
         self._image = image
-        
+    
+    def isPlatform(self):
+        return True
+    
+    def collision(self):
+        pass
+
     def dessine(self, ecran, coord, cycle):
         ecran.blit(self._image, coord)
 
@@ -101,6 +112,13 @@ class Niveau:
         # Chargement du niveau
         self.charge("niveau_1.txt")
 
+        # Indice
+        self._hintCoords = None
+
+    def afficherIndice(self, coords):
+        self._hintCoords = coords
+        pass
+
     def charge(self, cheminNiveau):
         extraniveau = open(cheminNiveau + ".yaml")
         extraniveau_data = yaml.load(extraniveau, Loader=yaml.Loader)
@@ -132,9 +150,11 @@ class Niveau:
                     #perso = EspritDesNuages([x, y], self, extradata)
                     self._personnages.append(perso)
                 elif curchar == 'p':
-                    self._niveaudata[x][y]['bloc'] = Bloc_papillon()
+                    mechant = Papition([x, y], self)
+                    self._personnages.append(mechant)
+                    #self._niveaudata[x][y]['bloc'] = Bloc_papillon()
                 elif curchar == '*':
-                    self._niveaudata[x][y]['bloc'] = Bloc_piece()
+                    self._niveaudata[x][y]['bloc'] = Piece([x, y], self)
                 else:
                     self._niveaudata[x][y]['sprite'] = None
                 x += 1
@@ -147,9 +167,11 @@ class Niveau:
         # Dessiner uniquement ce qu'on voit à l'écran
         first_tile_x = int(-self._orig[0] / 32) - 1
         last_tile_x = int(first_tile_x + (taille_ecran[0]/32)) + 2
+        first_tile_y = int(-self._orig[1] / 32) - 1
+        last_tile_y = int(first_tile_y + (taille_ecran[1]/32)) + 2
 
         for x in range(first_tile_x, last_tile_x): #range(len(self._niveaudata)):
-            for y in range(len(self._niveaudata[x])):
+            for y in range(first_tile_y, last_tile_y): #range(len(self._niveaudata[x])):
                 if self._niveaudata[x][y]:
                     bloc = self._niveaudata[x][y]['bloc']
                     if bloc:
@@ -162,6 +184,28 @@ class Niveau:
         # Dessiner le dialogue
         if self._affiche_dialogue:
             self._dialogue.dessine(ecran)
+        # Dessiner les indices
+        if self._hintCoords:
+            hintX = self._hintCoords[0] - self._balo._position_pieds[0]
+            hintY = self._hintCoords[1] - self._balo._position_pieds[1]
+            # On affiche un indice en x
+            if abs(hintX) > abs(hintY):
+                if abs(hintX) < taille_ecran[0]:
+                    if hintX > 0:
+                        print("Droite")
+                    else:
+                        print("Gauche")
+                    pass
+                pass
+            # On affiche un indice en y
+            else:
+                if abs(hintY) < taille_ecran[1]:
+                    if hintY > 0:
+                        print("Haut")
+                    else:
+                        print("Bas")
+                    pass
+                pass
 
     def afficheDialogue(self, texte):
         if len(texte):
@@ -197,7 +241,9 @@ class Niveau:
         if tile:
             sprite = tile['bloc']
             if sprite:
-                return True
+                sprite.collision()
+                if sprite.isPlatform():
+                    return True
         return False
 
     def collision(self, position_pixel_niveau, vitesse_pixel=[0, 0]):
@@ -263,9 +309,11 @@ class Balo(Personnage):
         for balo_image in self._image_balo_d:
             self._image_balo_g.append(pygame.transform.flip(balo_image, True, False))
 
-        self._image_balo_feu = [pygame.image.load("balo_crache_1.png"),
-                                pygame.image.load("balo_crache_2.png"),
-                                pygame.image.load("balo_crache_3.png")]
+        self._image_balo_feu_d = [pygame.image.load("balo_crache_1.png"),
+                                  pygame.image.load("balo_crache_2.png"),
+                                  pygame.image.load("balo_crache_3.png")]
+        self._image_balo_feu_g = [pygame.transform.flip(x, True, False) for x in self._image_balo_feu_d]
+
         self._image_balo_prend_d = [pygame.image.load("balo_ramasse_1.png"),
                                     pygame.image.load("balo_ramasse_2.png")]
         self._image_balo_prend_g = [pygame.transform.flip(x, True, False) for x in self._image_balo_prend_d]
@@ -299,23 +347,35 @@ class Balo(Personnage):
                 ecran.blit(self._image_balo_d[(int(self._cycle_marche/20)) % 3], (position_ecran[0] - 16, position_ecran[1] - 64) )
             elif self._crache > 0:
                 if self._crache < 10:
-                    ecran.blit(self._image_balo_feu[0], (position_ecran[0] - 16, position_ecran[1] - 64) )
+                    ecran.blit(self._image_balo_feu_d[0], (position_ecran[0] - 16, position_ecran[1] - 64) )
                 elif self._crache < 20:
-                    ecran.blit(self._image_balo_feu[1], (position_ecran[0] - 16, position_ecran[1] - 64) )
+                    ecran.blit(self._image_balo_feu_d[1], (position_ecran[0] - 16, position_ecran[1] - 64) )
                 elif self._crache < 70:
-                    ecran.blit(self._image_balo_feu[2], (position_ecran[0] - 16, position_ecran[1] - 64) )
+                    ecran.blit(self._image_balo_feu_d[2], (position_ecran[0] - 16, position_ecran[1] - 64) )
                 elif self._crache < 80:
-                    ecran.blit(self._image_balo_feu[1], (position_ecran[0] - 16, position_ecran[1] - 64) )
+                    ecran.blit(self._image_balo_feu_d[1], (position_ecran[0] - 16, position_ecran[1] - 64) )
                 else:
-                    ecran.blit(self._image_balo_feu[0], (position_ecran[0] - 16, position_ecran[1] - 64) )
+                    ecran.blit(self._image_balo_feu_d[0], (position_ecran[0] - 16, position_ecran[1] - 64) )
             elif self._prend > 0:
                 if self._prend < 50:
                     ecran.blit(self._image_balo_prend_d[0], (position_ecran[0] - 16, position_ecran[1] - 64) );
                 else:
                     ecran.blit(self._image_balo_prend_d[1], (position_ecran[0] - 16, position_ecran[1] - 64) );
-        else:
+        else: # Direction.GAUCHE
             if self._prend == 0:
-                image = self._image_balo_g[(int(self._cycle_marche/20)) % 3]
+                if self._crache > 0:
+                    if self._crache < 10:
+                        image = self._image_balo_feu_g[0]
+                    elif self._crache < 20:
+                        image = self._image_balo_feu_g[1]
+                    elif self._crache < 70:
+                        image = self._image_balo_feu_g[2]
+                    elif self._crache < 80:
+                        image = self._image_balo_feu_g[1]
+                    else:
+                        image = self._image_balo_feu_g[0]
+                else:
+                    image = self._image_balo_g[(int(self._cycle_marche/20)) % 3]
             else:
                 if self._prend < 50:
                     image = self._image_balo_prend_g[0]
@@ -439,6 +499,12 @@ class Balo(Personnage):
         for perso in self._niveau._personnages:
             if perso != self:
                 distance_perso = self.distance(perso)
+                if self._crache > 10:
+                    if distance_perso < 40:
+                        distance_x = perso._position_pieds[0] - self._position_pieds[0]
+                        if ((self._direction == Direction.DROITE) and (distance_x > 0)) or ((self._direction == Direction.GAUCHE) and (distance_x < 0)):
+                            if abs(perso._position_pieds[1] - self._position_pieds[1]) < 5:
+                                perso.dansLeFeu()
                 if distance_perso < 28:
                     perso.contact()
 
@@ -456,7 +522,9 @@ class Balo(Personnage):
 
 
 niveau = Niveau()
- 
+hints = Hints(niveau)
+hints.setObjectif((100, 100))
+
 orig = 0
 origy = 0
 position_pieds_balo = [niveau._position_tile_balo[0]*32 + 16, niveau._position_tile_balo[1]*32 + 32]
@@ -555,6 +623,9 @@ while 1:
         ecran.blit(vies, (64, 32))
         # Dessin de l'energie
         ecran.blit(energies[4 - niveau._balo._energie], (taille_ecran[0] - 70, 0))
+
+        # Dessin des "hints" (flèches)
+        hints.dessine(ecran, cycle=cycle)
 
         pygame.display.flip()
         pygame.time.Clock().tick(60)
