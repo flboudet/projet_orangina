@@ -15,6 +15,12 @@ class Personnage:
     def getPositionPixel(self):
         return self._niveau.conversionPositionTile(self._position_tile)
 
+    def distanceCoords(self, coords):
+        positionSelf = self.getPositionPixel()
+        distanceX = positionSelf[0] - coords[0]
+        distanceY = positionSelf[1] - coords[1]
+        return math.sqrt(distanceX**2 + distanceY**2)
+    
     def distance(self, autrePerso):
         positionSelf = self.getPositionPixel()
         positionAutre = autrePerso.getPositionPixel()
@@ -26,4 +32,7 @@ class Personnage:
         pass
     
     def contact(self):
+        pass
+    
+    def dansLeFeu(self):
         pass
