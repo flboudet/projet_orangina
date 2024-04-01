@@ -1,6 +1,7 @@
 from personnage import *
 from enum import Enum
 import pygame
+import ame_perdue
 
 #c'est le "e" la lettre.
 class EtatEspritSavoir(Enum):
@@ -108,6 +109,7 @@ class EspritSavoir(Personnage):
         elif self._etat_esprit == EtatEspritSavoir.TRANSFORME_EN_FANTOME:
             self._niveau.afficheDialogue(self._texte_2)
             self._etat_esprit = EtatEspritSavoir.QUETE_DES_ESPRITS
+            ame_perdue.AmePerdue.indiceProchaineAme()
 
         elif self._etat_esprit == EtatEspritSavoir.QUETE_DES_ESPRITS:
             if self._nombre_esprits < 4:

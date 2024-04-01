@@ -8,6 +8,7 @@ class EtatAmePerdue(Enum):
     PRISE = 2
 
 class AmePerdue(Personnage):
+    _toutesLesAmes = []
 
     def __init__(self, position_tile, niveau, extradata):
         super().__init__(position_tile, niveau)
@@ -21,6 +22,7 @@ class AmePerdue(Personnage):
         ]
         self._animation = 0
         self._etat = EtatAmePerdue.PAS_PRISE
+        AmePerdue._toutesLesAmes.append(self)
 
     def dessine(self, ecran : pygame.Surface):
         if self._etat == EtatAmePerdue.PRISE:
@@ -45,5 +47,20 @@ class AmePerdue(Personnage):
             if self._etat ==EtatAmePerdue.PAS_PRISE:
                 self._niveau._balo.prend()
                 self._etat = EtatAmePerdue.EN_PRISE
+                AmePerdue.indiceProchaineAme()
         pass
     
+    @classmethod
+    def indiceProchaineAme(cls):
+        # Etape 1 : on recherche l'ame la plus proche de Balo
+        pluspetitedist = 1e100
+        prochaineame = None
+        for ame in cls._toutesLesAmes:
+            curdist = ame._niveau._balo.distance(ame)
+            if curdist < pluspetitedist:
+                pluspetitedist = curdist
+                prochaineame = ame
+        # Etape 2 : on indique l'ame la plus proche
+        if prochaineame:
+            prochaineame._niveau.afficherIndice(prochaineame._position_pieds)
+        
