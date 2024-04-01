@@ -32,4 +32,7 @@ class Drhaka(Personnage):
 
     def contact(self):
         self._niveau._balo.perteEnergie(1)
+    
+    def dansLeFeu(self):
+        self._niveau._personnages.remove(self)
         
