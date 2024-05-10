@@ -36,3 +36,9 @@ class Personnage:
     
     def dansLeFeu(self):
         pass
+
+    def distanceAction(self):
+        return 96
+    
+    def derriereBalo(self):
+        return False

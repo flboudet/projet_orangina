@@ -5,6 +5,8 @@ class EtatPapition(Enum):
     TRANQUILLE = 0
     POURSUITE = 1
     RETOUR = 2
+    AGONIE = 3
+    MORT = 4
 
 class Papition(Personnage):
     def __init__(self, position_tile, niveau):
@@ -16,6 +18,14 @@ class Papition(Personnage):
         self._images_g = [pygame.image.load("papition_1.png"),
                           pygame.image.load("papition_2.png")]
         self._images_d = [pygame.transform.flip(x, True, False) for x in self._images_g]
+
+        self._images_destroy_g = [pygame.image.load("papition_destroy_1.png"),
+                                  pygame.image.load("papition_destroy_2.png"),
+                                  pygame.image.load("papition_destroy_3.png"),
+                                  pygame.image.load("papition_destroy_4.png"),
+                                  pygame.image.load("papition_destroy_5.png")]
+        self._images_destroy_d = [pygame.transform.flip(x, True, False) for x in self._images_destroy_g]
+        
         self._vitesse = [0.4, 0.]
         self._t = 0
         self._animation = 0
@@ -26,12 +36,22 @@ class Papition(Personnage):
     
     def dessine(self, ecran):
         position_ecran = self._niveau.conversionPositionPixelEcran(self._position_pieds)
-        if self._vitesse[0] < 0:
-            images = self._images_g
-        else:
-            images = self._images_d
+        vitesse_anim = 30
+
+        if self._mode == EtatPapition.AGONIE:
+            vitesse_anim = 10
+            if self._vitesse[0] < 0:
+                images = self._images_destroy_g
+            else:
+                images = self._images_destroy_g
+
+        else: # pas agonie
+            if self._vitesse[0] < 0:
+                images = self._images_g
+            else:
+                images = self._images_d
         imagesCount = len(images)
-        ecran.blit(images[int(self._animation/30)%imagesCount], (position_ecran[0] - 16, position_ecran[1] - 32) )
+        ecran.blit(images[int(self._animation/vitesse_anim)%imagesCount], (position_ecran[0] - 16, position_ecran[1] - 32) )
 
     def gestion(self):
         self._animation += 1
@@ -82,6 +102,11 @@ class Papition(Personnage):
                     self._vitesse[1] = 1.
             pass
         
+        elif self._mode == EtatPapition.AGONIE:
+            if self._animation > 60:
+                self._niveau._personnages.remove(self)
+                self._mode = EtatPapition.MORT
+
         # Mise à jour de la position
         self._position_pieds[0] += self._vitesse[0]
         self._position_pieds[1] += self._vitesse[1]
@@ -90,7 +115,13 @@ class Papition(Personnage):
         return self._position_pieds
 
     def contact(self):
-        self._niveau._balo.perteEnergie(1)
+        if self._mode.value <= EtatPapition.AGONIE.value:
+            self._niveau._balo.perteEnergie(1)
 
     def dansLeFeu(self):
-        self._niveau._personnages.remove(self)
+        self._mode = EtatPapition.AGONIE
+        self._animation = 0
+        # On arrête la vitesse horizontale, mais en gardant le sens
+        self._vitesse[0] = self._vitesse[0]/abs(self._vitesse[0])
+        # On fait tomber
+        self._vitesse[1] = 2

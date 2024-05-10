@@ -21,6 +21,7 @@ from ame_perdue import *
 from teleporteur import *
 from dimmer import *
 from hints import *
+from volcan import *
 
 print("Projet Orangina")
 
@@ -113,10 +114,10 @@ class Niveau:
         self.charge("niveau_1.txt")
 
         # Indice
-        self._hintCoords = None
+        self._hints = Hints(self)
 
     def afficherIndice(self, coords):
-        self._hintCoords = coords
+        self._hints.setObjectif(coords)
         pass
 
     def charge(self, cheminNiveau):
@@ -176,36 +177,21 @@ class Niveau:
                     bloc = self._niveaudata[x][y]['bloc']
                     if bloc:
                         bloc.dessine(ecran, (x*32 + self._orig[0], y*32 + self._orig[1]), cycle=cycle)
+        # Dessiner les personnages et objets spéciaux
+        for personnage in self._personnages:
+            if personnage.derriereBalo():
+                personnage.dessine(ecran)
         # Dessiner Balo
         self._balo.dessine(ecran)
-        # Dessiner les méchants
+        # Dessiner les personnages et objets spéciaux
         for personnage in self._personnages:
-            personnage.dessine(ecran)
+            if not personnage.derriereBalo():
+                personnage.dessine(ecran)
         # Dessiner le dialogue
         if self._affiche_dialogue:
             self._dialogue.dessine(ecran)
         # Dessiner les indices
-        if self._hintCoords:
-            hintX = self._hintCoords[0] - self._balo._position_pieds[0]
-            hintY = self._hintCoords[1] - self._balo._position_pieds[1]
-            # On affiche un indice en x
-            if abs(hintX) > abs(hintY):
-                if abs(hintX) < taille_ecran[0]:
-                    if hintX > 0:
-                        print("Droite")
-                    else:
-                        print("Gauche")
-                    pass
-                pass
-            # On affiche un indice en y
-            else:
-                if abs(hintY) < taille_ecran[1]:
-                    if hintY > 0:
-                        print("Haut")
-                    else:
-                        print("Bas")
-                    pass
-                pass
+        self._hints.dessine(ecran)
 
     def afficheDialogue(self, texte):
         if len(texte):
@@ -401,11 +387,12 @@ class Balo(Personnage):
         self._vitesse[0] = 0
         self._en_course = False
 
-    def saute(self):
+    def saute(self, dvitesse = -3):
         if self._saut == SautBalo.RIEN:
+#            mixer.Sound.play(son_saut)
             self._saut = SautBalo.SAUT_COURT
             self._cycle_saut = 0
-            self._vitesse[1] = -3
+            self._vitesse[1] = dvitesse
         elif self._cycle_saut > 20:
             self._saut = SautBalo.SAUT_LONG
         elif self._cycle_saut > 9:
@@ -423,7 +410,7 @@ class Balo(Personnage):
         for perso in self._niveau._personnages:
             if perso != self:
                 distance_perso = self.distance(perso)
-                if distance_perso < 96:
+                if distance_perso < perso.distanceAction():
                     perso.actionne()
                     return;
 
@@ -522,8 +509,6 @@ class Balo(Personnage):
 
 
 niveau = Niveau()
-hints = Hints(niveau)
-hints.setObjectif((100, 100))
 
 orig = 0
 origy = 0
@@ -545,6 +530,12 @@ gigot = pygame.image.load("gigot.png")
 font = pygame.font.SysFont(None, 32)
 
 _actionne = False
+
+# Masque de la nuit 0.00028935
+nuit = pygame.Surface(ecran.get_size())
+nuit.fill((0,0,50))           # this fills the entire surface
+cycle_nuit = 0
+delta_nuit = 0.0028935
 
 while 1:
     cycle += 1
@@ -593,6 +584,12 @@ while 1:
     # Dessin, 1 cycle sur 4
     if cycle % 4 == 0:
         #ecran.fill(black)
+        cycle_nuit += delta_nuit
+        if cycle_nuit > 164:
+            delta_nuit = -delta_nuit
+        if cycle_nuit < 0:
+            delta_nuit = -delta_nuit
+        nuit.set_alpha(cycle_nuit)                # alpha level
         ecran.blit(image_ciel, image_ciel_rect)
 
         # Calcul de la position de la camera, scrolling horizontal
@@ -614,6 +611,8 @@ while 1:
         niveau.change_origine(orig, origy)
         niveau.dessine(ecran, cycle=cycle)
 
+        # Dessin de la nuit
+        ecran.blit(nuit, (0,0))
         # Dessin du nombre de vies
         ecran.blit(gigot, (10, 0))
         texteVies = "x{0}".format(niveau._balo._vies)
@@ -623,9 +622,6 @@ while 1:
         ecran.blit(vies, (64, 32))
         # Dessin de l'energie
         ecran.blit(energies[4 - niveau._balo._energie], (taille_ecran[0] - 70, 0))
-
-        # Dessin des "hints" (flèches)
-        hints.dessine(ecran, cycle=cycle)
 
         pygame.display.flip()
         pygame.time.Clock().tick(60)

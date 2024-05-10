@@ -123,3 +123,21 @@ class EspritSavoir(Personnage):
             self._images = self._images_fantom_reverse
             self._animation = 0
             self._etat_esprit = EtatEspritSavoir.FIN_QUETE_ANIM
+
+class MaisonSavoir(Personnage):
+    def __init__(self, position_tile, niveau, extradata):
+        super().__init__(position_tile, niveau)
+        self._maison = pygame.image.load("maison_1.png")
+        self._position_coingauche = niveau.conversionPositionTile(position_tile)
+        pass
+
+    def dessine(self, ecran : pygame.Surface):
+        position_ecran = self._niveau.conversionPositionPixelEcran((self._position_coingauche[0], self._position_coingauche[1]+32-self._maison.get_height()))
+        ecran.blit(self._maison, position_ecran)
+        pass
+
+    def gestion(self):
+        pass
+
+    def derriereBalo(self):
+        return True

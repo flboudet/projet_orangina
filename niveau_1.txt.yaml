@@ -2,8 +2,8 @@ object:
   1:
     class: EspritVendeur
     text_1: |
-      Un conseille contre 5 
-      pièce, d'accore? 
+      Un conseil contre 5 
+      pièces, d'accord ? 
     text_2: |
       Il y a un grand réseau de
       téléporteurs, donc ils
@@ -45,4 +45,9 @@ object:
   6:
     class: AmePerdue
     
+  7:
+    class: BlocSauvegarde
+
+  8:
+    class: MaisonSavoir
 
