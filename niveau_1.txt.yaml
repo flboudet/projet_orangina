@@ -51,3 +51,18 @@ object:
   8:
     class: MaisonSavoir
 
+  A:
+    class: AmePerdue
+    num_indice: 1
+
+  B:
+    class: AmePerdue
+    num_indice: 2
+
+  C:
+    class: AmePerdue
+    num_indice: 3
+  
+  D:
+    class: AmePerdue
+    num_indice: 4

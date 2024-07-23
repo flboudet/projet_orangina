@@ -122,7 +122,7 @@ class Niveau:
 
     def charge(self, cheminNiveau):
         extraniveau = open(cheminNiveau + ".yaml")
-        extraniveau_data = yaml.load(extraniveau, Loader=yaml.Loader)
+        extraniveau_data = yaml.load(extraniveau, Loader=yaml.BaseLoader)
         print(extraniveau_data)
         niveau = open(cheminNiveau)
         x, y = 0, 0
@@ -144,8 +144,8 @@ class Niveau:
                 elif curchar == 'm':
                     mechant = Drhaka([x, y], self)
                     self._personnages.append(mechant)
-                elif re.match("[0-9]", curchar):
-                    extradata = extraniveau_data["object"][int(curchar)]
+                elif re.match("[0-9]|[A-F]", curchar):
+                    extradata = extraniveau_data["object"][curchar]
                     klass = globals()[extradata["class"]]
                     perso = klass([x, y], self, extradata)
                     #perso = EspritDesNuages([x, y], self, extradata)
@@ -177,13 +177,13 @@ class Niveau:
                     bloc = self._niveaudata[x][y]['bloc']
                     if bloc:
                         bloc.dessine(ecran, (x*32 + self._orig[0], y*32 + self._orig[1]), cycle=cycle)
-        # Dessiner les personnages et objets spéciaux
+        # Dessiner les personnages et objets spéciaux en arriere plan
         for personnage in self._personnages:
             if personnage.derriereBalo():
                 personnage.dessine(ecran)
         # Dessiner Balo
         self._balo.dessine(ecran)
-        # Dessiner les personnages et objets spéciaux
+        # Dessiner les personnages et objets spéciaux au premier plan
         for personnage in self._personnages:
             if not personnage.derriereBalo():
                 personnage.dessine(ecran)
@@ -203,6 +203,10 @@ class Niveau:
     def gestion(self):
         for personnage in self._personnages:
             personnage.gestion()
+            # Retirer les personnages qui sortent des limites du jeu
+            if personnage.getPositionPixel()[1] > 320000:
+                self._personnages.remove(personnage)
+                print("Personnage sorti des limites du jeu")
         self._balo.gestion()
         if self._affiche_dialogue:
             self._dialogue.gestion()
@@ -312,7 +316,7 @@ class Balo(Personnage):
         self._en_course = False
         self._crache = 0
         self._prend = 0
-        self._vies = 3
+        self._vies = 5
         self._energie = 4
         self._invulnerable = 0
         self._derniere_position_posee = self._position_pieds.copy()
